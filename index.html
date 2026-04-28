@@ -3,514 +3,862 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alpha-Q 2.0 · 交易复盘系统</title>
+    <title>ALPHA-Q 2.0 // 交易复盘终端</title>
     <style>
+        /* ═══════════════════════════════════════════
+           BLOOMBERG-STYLE FINANCIAL TERMINAL THEME
+           ═══════════════════════════════════════════ */
         :root {
-            --bg-primary: #0a0e17;
-            --bg-secondary: #111827;
-            --bg-card: #1a2332;
-            --border-color: #2a3548;
-            --text-primary: #e5e7eb;
-            --text-secondary: #9ca3af;
-            --accent-blue: #3b82f6;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --accent-orange: #f59e0b;
+            /* ── Core Palette ── */
+            --bg-primary:    #0D1117;
+            --bg-card:       #161B22;
+            --bg-elevated:   #1C2128;
+            --bg-hover:      #21262D;
+            --border:        #30363D;
+            --border-subtle: #21262D;
+
+            /* ── Text Hierarchy ── */
+            --text-primary:   #E6EDF3;
+            --text-secondary: #8B949E;
+            --text-muted:     #484F58;
+
+            /* ── Financial Semantic Colors ── */
+            --green-bright:   #3FB950;   /* 盈利 / 超预期 */
+            --green-dim:      #238636;
+            --green-bg:       rgba(63,185,80,0.08);
+            --red-bright:     #F85149;   /* 亏损 / 低于预期 */
+            --red-dim:        #DA3633;
+            --red-bg:         rgba(248,81,73,0.08);
+            --amber-bright:   #D29922;   /* 警告 / 观察 */
+            --amber-dim:      #9E6A03;
+            --amber-bg:       rgba(210,153,34,0.08);
+            --blue-bright:    #58A6FF;   /* 信息 / 中性 */
+            --blue-dim:       #1F6FEB;
+            --blue-bg:        rgba(88,166,255,0.08);
+            --cyan-bright:    #39D2C0;
+            --purple-bright:  #BC8CFF;
+
+            /* ── Spacing & Radius ── */
+            --radius:    12px;
+            --radius-sm: 6px;
+            --gap:       1.25rem;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
             background: var(--bg-primary);
             color: var(--text-primary);
-            line-height: 1.6;
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-        }
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
+        /* ══════════════════
+           HEADER / TERMINAL BAR
+           ══════════════════ */
+        .terminal-bar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            height: 52px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .logo {
+        .terminal-brand {
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
 
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-            border-radius: 10px;
+        .terminal-logo {
+            width: 28px;
+            height: 28px;
+            border: 1.5px solid var(--blue-bright);
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.25rem;
-            font-weight: bold;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--blue-bright);
+            letter-spacing: -0.5px;
         }
 
-        .logo-text h1 {
-            font-size: 1.25rem;
-            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .terminal-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
         }
 
-        .logo-text p {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
+        .terminal-subtitle {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin-left: 0.75rem;
+            padding-left: 0.75rem;
+            border-left: 1px solid var(--border);
         }
 
+        .terminal-status {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green-bright);
+            display: inline-block;
+            margin-right: 0.35rem;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .terminal-time {
+            color: var(--cyan-bright);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ══════════════════
+           MAIN CONTAINER
+           ══════════════════ */
         .container {
-            max-width: 1400px;
+            max-width: 1440px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1.75rem 2rem 3rem;
         }
 
-        .date-header {
+        /* ── Date Banner ── */
+        .date-banner {
             margin-bottom: 2rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
         }
 
-        .date-header h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+        .date-banner h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.4rem;
         }
 
-        .date-header .subtitle {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
+        .date-banner h2 span {
+            color: var(--text-muted);
+            font-weight: 400;
         }
 
+        .date-banner .meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+
+        .date-banner .meta em {
+            color: var(--amber-bright);
+            font-style: normal;
+        }
+
+        /* ══════════════════
+           CARD SYSTEM
+           ══════════════════ */
         .card {
             background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            margin-bottom: var(--gap);
+            transition: border-color 0.2s ease;
         }
 
-        .card-header {
+        .card:hover {
+            border-color: #3D444D;
+        }
+
+        .card-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.85rem;
+            border-bottom: 1px solid var(--border-subtle);
         }
 
-        .card-title {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
+        .card-label {
             font-size: 0.75rem;
-        }
-
-        .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
-        .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
-        .badge-orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
-        .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.875rem;
-        }
-
-        th {
-            background: var(--bg-secondary);
-            padding: 0.75rem 1rem;
-            text-align: left;
             font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
             color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        td {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .grid { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
-        .grid-4 { grid-template-columns: repeat(4, 1fr); }
-
-        .metric-card {
-            text-align: center;
-            padding: 1.5rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-        }
-
-        .metric-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 0.5rem 0;
-        }
-
-        .metric-label { color: var(--text-secondary); font-size: 0.875rem; }
-        .metric-change { font-size: 0.75rem; margin-top: 0.25rem; }
-        .metric-change.positive { color: var(--accent-green); }
-        .metric-change.negative { color: var(--accent-red); }
-
-        .mainline-card {
-            border-left: 3px solid var(--accent-green);
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-        }
-
-        .mainline-card.retreat { border-left-color: var(--accent-red); }
-        .mainline-card.rotating { border-left-color: var(--accent-orange); }
-
-        .mainline-header {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
+            gap: 0.6rem;
         }
 
-        .mainline-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--accent-green);
-        }
-
-        .mainline-dot.red { background: var(--accent-red); }
-        .mainline-dot.orange { background: var(--accent-orange); }
-
-        .rank-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            margin-bottom: 0.75rem;
-        }
-
-        .rank-badge {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
+        .card-label .step-num {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-        }
-
-        .rank-1 { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #000; }
-        .rank-2 { background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: #fff; }
-        .rank-3 { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #fff; }
-
-        .rank-info { flex: 1; }
-        .rank-stock { font-weight: 600; margin-bottom: 0.25rem; }
-        .rank-detail { font-size: 0.75rem; color: var(--text-secondary); }
-        .rank-tag {
-            padding: 0.25rem 0.5rem;
-            background: var(--bg-card);
+            width: 22px;
+            height: 22px;
+            background: var(--blue-bg);
+            border: 1px solid var(--blue-dim);
             border-radius: 4px;
-            font-size: 0.75rem;
-            color: var(--accent-blue);
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--blue-bright);
         }
 
-        .alert-box {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--accent-red);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-
-        .alert-title {
-            color: var(--accent-red);
+        /* ══════════════════
+           BADGE SYSTEM
+           ══════════════════ */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+            font-size: 0.65rem;
             font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            border: 1px solid transparent;
+        }
+
+        .tag-green  { background: var(--green-bg);  color: var(--green-bright);  border-color: rgba(63,185,80,0.2); }
+        .tag-red    { background: var(--red-bg);     color: var(--red-bright);    border-color: rgba(248,81,73,0.2); }
+        .tag-amber  { background: var(--amber-bg);   color: var(--amber-bright);  border-color: rgba(210,153,34,0.2); }
+        .tag-blue   { background: var(--blue-bg);    color: var(--blue-bright);   border-color: rgba(88,166,255,0.2); }
+
+        /* ══════════════════
+           TABLE SYSTEM (BLOOMBERG-STYLE)
+           No vertical lines, strong headers, high contrast
+           ══════════════════ */
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+            letter-spacing: 0.2px;
+        }
+
+        .tbl thead th {
+            background: var(--bg-primary);
+            padding: 0.6rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tbl thead th:first-child { padding-left: 0; }
+        .tbl thead th:last-child  { padding-right: 0; }
+
+        .tbl tbody td {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .tbl tbody td:first-child { padding-left: 0; }
+        .tbl tbody td:last-child  { padding-right: 0; }
+
+        .tbl tbody tr:hover td {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .tbl tbody tr:last-child td { border-bottom: none; }
+
+        .tbl .col-dim {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .tbl .col-pos { color: var(--green-bright); font-weight: 600; }
+        .tbl .col-neg { color: var(--red-bright);   font-weight: 600; }
+        .tbl .col-warn { color: var(--amber-bright); font-weight: 600; }
+
+        /* ══════════════════
+           METRIC GRID
+           ══════════════════ */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-cell {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 1.25rem 1rem;
+            text-align: center;
+        }
+
+        .metric-cell .m-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-muted);
             margin-bottom: 0.5rem;
         }
 
-        @media (max-width: 1024px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px) { .grid-4 { grid-template-columns: 1fr; } }
+        .metric-cell .m-value {
+            font-size: 1.65rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+
+        .metric-cell .m-sub {
+            font-size: 0.65rem;
+            margin-top: 0.3rem;
+            letter-spacing: 0.3px;
+        }
+
+        .m-pos { color: var(--green-bright); }
+        .m-neg { color: var(--red-bright); }
+        .m-neu { color: var(--text-primary); }
+        .m-warn { color: var(--amber-bright); }
+
+        /* ══════════════════
+           MAINLINE TRACKER
+           ══════════════════ */
+        .track-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--green-bright);
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+            margin-bottom: 0.75rem;
+            transition: background 0.15s;
+        }
+
+        .track-item:hover { background: var(--bg-hover); }
+        .track-item.retreat  { border-left-color: var(--red-bright); }
+        .track-item.rotating { border-left-color: var(--amber-bright); }
+
+        .track-head {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .track-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green-bright);
+        }
+
+        .track-indicator.red   { background: var(--red-bright); }
+        .track-indicator.amber { background: var(--amber-bright); }
+
+        .track-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .track-body {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .track-body strong { color: var(--text-primary); }
+
+        /* ══════════════════
+           RANK TIERS
+           ══════════════════ */
+        .tier-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.6rem;
+            transition: border-color 0.15s;
+        }
+
+        .tier-row:hover { border-color: var(--border); }
+
+        .tier-num {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .tier-1 { background: #F0B429; color: #0D1117; }
+        .tier-2 { background: #8B949E; color: #0D1117; }
+        .tier-3 { background: #A06B25; color: #0D1117; }
+
+        .tier-info { flex: 1; }
+        .tier-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+        .tier-desc { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+        .tier-chip {
+            font-size: 0.62rem;
+            padding: 0.15rem 0.5rem;
+            background: var(--blue-bg);
+            border: 1px solid rgba(88,166,255,0.15);
+            border-radius: 3px;
+            color: var(--blue-bright);
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        /* ══════════════════
+           ALERT BOX
+           ══════════════════ */
+        .alert-panel {
+            background: var(--red-bg);
+            border: 1px solid rgba(248,81,73,0.25);
+            border-radius: var(--radius-sm);
+            padding: 1.15rem 1.25rem;
+            margin-top: 1.25rem;
+        }
+
+        .alert-panel .alert-head {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--red-bright);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .alert-panel .alert-head::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--red-bright);
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        .alert-panel p,
+        .alert-panel li {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .alert-panel strong { color: var(--red-bright); }
+
+        .alert-panel ul {
+            list-style: none;
+            margin-top: 0.5rem;
+        }
+
+        .alert-panel li {
+            padding: 0.3rem 0;
+            padding-left: 1.25rem;
+            position: relative;
+        }
+
+        .alert-panel li::before {
+            content: '×';
+            position: absolute;
+            left: 0;
+            color: var(--red-bright);
+            font-weight: 700;
+        }
+
+        /* ══════════════════
+           INSIGHT BOX (AMBER)
+           ══════════════════ */
+        .insight-box {
+            background: var(--amber-bg);
+            border: 1px solid rgba(210,153,34,0.2);
+            border-radius: var(--radius-sm);
+            padding: 1.15rem 1.25rem;
+            margin-top: 1.25rem;
+        }
+
+        .insight-box .insight-head {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--amber-bright);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-box p {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .insight-box strong { color: var(--text-primary); }
+
+        /* ══════════════════
+           CONCLUSION PANEL
+           ══════════════════ */
+        .conclusion-panel {
+            background: linear-gradient(135deg, rgba(88,166,255,0.06) 0%, rgba(57,210,192,0.06) 100%);
+            border: 1px solid rgba(88,166,255,0.2);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            margin-bottom: var(--gap);
+        }
+
+        .conclusion-panel .card-label {
+            color: var(--cyan-bright);
+            margin-bottom: 1rem;
+        }
+
+        .conclusion-panel p {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.85;
+        }
+
+        .conclusion-panel strong { color: var(--cyan-bright); }
+
+        /* ══════════════════
+           RESPONSIVE
+           ══════════════════ */
+        @media (max-width: 1024px) {
+            .metric-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .metric-grid { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+            .terminal-bar { padding: 0 1rem; }
+            .terminal-subtitle { display: none; }
+            .card { padding: 1.25rem; }
+        }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">
-                <div class="logo-icon">α</div>
-                <div class="logo-text">
-                    <h1>Alpha-Q 2.0</h1>
-                    <p>交易复盘系统 · SOP验证版</p>
-                </div>
-            </div>
+
+    <!-- ═══ TERMINAL BAR ═══ -->
+    <header class="terminal-bar">
+        <div class="terminal-brand">
+            <div class="terminal-logo">α</div>
+            <span class="terminal-title">Alpha-Q 2.0</span>
+            <span class="terminal-subtitle">交易复盘终端 · SOP 验证版</span>
+        </div>
+        <div class="terminal-status">
+            <span><span class="status-dot"></span>LIVE</span>
+            <span class="terminal-time" id="clock">--:--:--</span>
         </div>
     </header>
 
+    <!-- ═══ MAIN ═══ -->
     <div class="container">
-        <div class="date-header">
-            <h2>📅 扫地僧逻辑深度复盘 · 2026-04-28</h2>
-            <p class="subtitle">新SOP验证版 | 包含逻辑对账、地位属性、亏钱探测、错题召回四大机制</p>
+
+        <!-- Date Banner -->
+        <div class="date-banner">
+            <h2>REVIEW <span>//</span> 2026-04-28</h2>
+            <p class="meta">逻辑深度复盘 · 新SOP验证版 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
         </div>
 
-        <!-- 步骤0: 历史错题召回 -->
+        <!-- ──── STEP 0: 错题召回 ──── -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title">📋 步骤 0: 历史错题召回</div>
-                <span class="badge badge-orange">修正规则</span>
+            <div class="card-head">
+                <div class="card-label"><span class="step-num">0</span> 历史错题召回</div>
+                <span class="tag tag-amber">修正规则</span>
             </div>
-            <p style="font-size: 0.875rem; color: var(--text-secondary);">
-                <strong>错题本检索：</strong>检索到 2026-04-28 维科技术弱转强误判记录。今日市场情况：与 4/28 不同，当下芯片主力净流出 -162 亿，跌停 30 家，属于板块级退潮而非横盘整理。因此 <strong>4/28 "竞价弱≠放弃"的修正规则不完全适用</strong>——板块退潮远比个股分歧危险。
+            <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75;">
+                <strong style="color:var(--text-primary)">错题本检索：</strong>检索到 2026-04-28 维科技术弱转强误判记录。今日市场情况：与 4/28 不同，当下芯片主力净流出 <span class="col-neg">-162 亿</span>，跌停 <span class="col-neg">30 家</span>，属于板块级退潮而非横盘整理。因此 <strong style="color:var(--amber-bright)">4/28 "竞价弱≠放弃"的修正规则不完全适用</strong>——板块退潮远比个股分歧危险。
             </p>
         </div>
 
-        <!-- 一、逻辑对账 -->
+        <!-- ──── 一、逻辑对账 ──── -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title">一、逻辑对账（昨日预期 vs 今日实盘）</div>
-                <span class="badge badge-blue">核心模块</span>
+            <div class="card-head">
+                <div class="card-label"><span class="step-num">1</span> 逻辑对账 · 昨日预期 vs 今日实盘</div>
+                <span class="tag tag-blue">CORE</span>
             </div>
-            <table>
+            <table class="tbl">
                 <thead>
-                    <tr><th>维度</th><th>昨日预期（4/27 收盘）</th><th>今日实盘（4/28）</th><th>预期差</th></tr>
+                    <tr><th>维度</th><th>昨日预期 (4/27)</th><th>今日实盘 (4/28)</th><th>预期差</th></tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>芯片/半导体</strong></td>
+                        <td class="col-dim">芯片/半导体</td>
                         <td>高潮延续，强者恒强</td>
-                        <td>✅ 部分冲高但主力净流出 <strong>-162 亿</strong>（退潮）</td>
-                        <td><span class="badge badge-red">低于预期</span></td>
+                        <td>部分冲高但主力净流出 <span class="col-neg">-162 亿</span>（退潮）</td>
+                        <td><span class="tag tag-red">低于预期</span></td>
                     </tr>
                     <tr>
-                        <td><strong>一季报增长</strong></td>
+                        <td class="col-dim">一季报增长</td>
                         <td>暗线轮动</td>
-                        <td>✅ 强度 <strong>17455</strong> 断层第一，涨停 13 只，净流入 <strong>+48.75 亿</strong></td>
-                        <td><span class="badge badge-green">超预期 ✅</span></td>
+                        <td>强度 <span class="col-pos">17455</span> 断层第一，涨停 13 只，净流入 <span class="col-pos">+48.75 亿</span></td>
+                        <td><span class="tag tag-green">超预期</span></td>
                     </tr>
                     <tr>
-                        <td><strong>锂电</strong></td>
+                        <td class="col-dim">锂电</td>
                         <td>分歧后仍有修复机会</td>
-                        <td>❌ 多氟多 -2.14%、融捷 -0.85%，仅维科技术穿越</td>
-                        <td><span class="badge badge-red">低于预期</span></td>
+                        <td>多氟多 <span class="col-neg">-2.14%</span>、融捷 <span class="col-neg">-0.85%</span>，仅维科技术穿越</td>
+                        <td><span class="tag tag-red">低于预期</span></td>
                     </tr>
                     <tr>
-                        <td><strong>600152 维科技术</strong></td>
+                        <td class="col-dim">600152 维科技术</td>
                         <td>竞价弱转强，日内穿越</td>
-                        <td>✅ 开盘 14.55（+2%）→ 回踩 14.26 不破 → 拉升封死 15.69（+10%）</td>
-                        <td><span class="badge badge-green">符合预期</span></td>
+                        <td>开盘 14.55 (+2%) → 回踩 14.26 不破 → 封死 <span class="col-pos">15.69 (+10%)</span></td>
+                        <td><span class="tag tag-green">符合预期</span></td>
                     </tr>
                 </tbody>
             </table>
+            <div class="insight-box">
+                <div class="insight-head">逻辑修正定论</div>
+                <p>芯片退潮的信号被低估，一季报增长的爆发力被低估。4/27 半导体高潮本质是<strong>"主力拉升出货"</strong>，而业绩线才是机构真正的承接方向。</p>
+            </div>
         </div>
 
-        <!-- 二、市场定调 -->
+        <!-- ──── 二、市场定调 ──── -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title">二、市场定调</div>
+            <div class="card-head">
+                <div class="card-label"><span class="step-num">2</span> 市场定调</div>
+                <span class="tag tag-amber">混沌轮动期</span>
             </div>
-            <div class="grid grid-4">
-                <div class="metric-card">
-                    <div class="metric-label">上证指数</div>
-                    <div class="metric-value" style="color: var(--accent-red);">-0.19%</div>
-                    <div class="metric-change negative">权重护盘</div>
+
+            <div class="metric-grid">
+                <div class="metric-cell">
+                    <div class="m-label">上证指数</div>
+                    <div class="m-value m-neg">-0.19%</div>
+                    <div class="m-sub m-muted" style="color:var(--text-muted)">权重护盘</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-label">深证成指</div>
-                    <div class="metric-value" style="color: var(--accent-red);">-1.10%</div>
-                    <div class="metric-change negative">指数分化</div>
+                <div class="metric-cell">
+                    <div class="m-label">深证成指</div>
+                    <div class="m-value m-neg">-1.10%</div>
+                    <div class="m-sub" style="color:var(--text-muted)">指数分化</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-label">创业板指</div>
-                    <div class="metric-value" style="color: var(--accent-red);">-1.43%</div>
-                    <div class="metric-change negative">成长承压</div>
+                <div class="metric-cell">
+                    <div class="m-label">创业板指</div>
+                    <div class="m-value m-neg">-1.43%</div>
+                    <div class="m-sub" style="color:var(--text-muted)">成长承压</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-label">成交额</div>
-                    <div class="metric-value">2.536 万亿</div>
-                    <div class="metric-change negative">缩量 600 亿</div>
+                <div class="metric-cell">
+                    <div class="m-label">成交额</div>
+                    <div class="m-value m-neu">2.536<span style="font-size:0.85rem;font-weight:400;color:var(--text-muted)"> 万亿</span></div>
+                    <div class="m-sub m-neg">▼ 600 亿</div>
                 </div>
             </div>
 
-            <table>
+            <table class="tbl">
                 <thead><tr><th>维度</th><th>数据</th><th>结论</th></tr></thead>
                 <tbody>
-                    <tr><td>涨跌比</td><td>~2017 : ~4499（约 1:2.25）</td><td>普跌格局，亏钱效应扩散</td></tr>
-                    <tr><td>涨停</td><td>59 家（昨日 77 家）</td><td>情绪降温</td></tr>
-                    <tr><td>跌停</td><td><strong style="color: var(--accent-red);">30 家</strong>（昨日个位数）</td><td><span class="badge badge-red">🔴 大幅增长</span></td></tr>
-                    <tr><td>连板高度</td><td>5 板（水发燃气 7天6板）</td><td>高度维持但边缘化</td></tr>
-                    <tr><td>晋级率（2进3）</td><td>16.67%（昨 6 只仅晋级 1 只）</td><td>接力意愿极弱</td></tr>
+                    <tr><td class="col-dim">涨跌比</td><td>~2017 : ~4499 (1:2.25)</td><td>普跌格局，亏钱效应扩散</td></tr>
+                    <tr><td class="col-dim">涨停</td><td>59 家 (昨日 77 家)</td><td>情绪降温</td></tr>
+                    <tr><td class="col-dim">跌停</td><td class="col-neg">30 家 (昨日个位数)</td><td><span class="tag tag-red">大幅增长</span></td></tr>
+                    <tr><td class="col-dim">连板高度</td><td>5 板 (水发燃气 7天6板)</td><td>高度维持但边缘化</td></tr>
+                    <tr><td class="col-dim">晋级率 2→3</td><td>16.67% (6只仅1只晋级)</td><td>接力意愿极弱</td></tr>
+                    <tr><td class="col-dim">A股均涨跌幅</td><td class="col-neg">-1.042%</td><td>全场普跌确认</td></tr>
                 </tbody>
             </table>
 
-            <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.875rem;">
-                <strong>情绪周期判定：</strong><span class="badge badge-orange">混沌轮动期（分歧→切换过渡段）</span><br><br>
-                不是冰点（涨停仍有 59 家），也不是退潮（一季报增长净流入 48 亿），而是<strong>旧主线（芯片）资金出逃 → 新主线（业绩线）建仓的通道</strong>。过渡段最容易出现"早盘追高→尾盘吃面"的坑，<strong>交易难度极高</strong>。
+            <div class="insight-box">
+                <div class="insight-head">情绪周期判定</div>
+                <p>不是冰点（涨停仍有 59 家），也不是退潮（一季报增长净流入 48 亿），而是<strong>旧主线（芯片）资金出逃 → 新主线（业绩线）建仓的通道</strong>。过渡段最容易出现"早盘追高→尾盘吃面"的坑，<strong>交易难度极高</strong>。</p>
             </div>
         </div>
 
-        <!-- 三、主线方向 -->
+        <!-- ──── 三、主线方向 ──── -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title">三、主线方向与地位属性定性</div>
-            </div>
-            
-            <div class="mainline-card">
-                <div class="mainline-header">
-                    <div class="mainline-dot"></div>
-                    <h3>主线一：一季报增长（强化确认）</h3>
-                    <span class="badge badge-green">新主线确立</span>
-                </div>
-                <p style="font-size: 0.875rem; color: var(--text-secondary);">
-                    不是任何股的补涨。它本身是 <strong>4/27 暗线→4/28 明牌</strong>的独立主线。板块强度 <strong>17455</strong>（断层第一）、主力净流入 <strong>+48.75 亿</strong>（全市场最大）。机构在买，板块梯队完整，<strong>已确立为新主线</strong>。
-                </p>
+            <div class="card-head">
+                <div class="card-label"><span class="step-num">3</span> 主线方向与地位属性定性</div>
             </div>
 
-            <div class="mainline-card retreat">
-                <div class="mainline-header">
-                    <div class="mainline-dot red"></div>
-                    <h3>主线二：芯片/半导体（退潮确认）</h3>
-                    <span class="badge badge-red">退潮中</span>
+            <div class="track-item">
+                <div class="track-head">
+                    <div class="track-indicator"></div>
+                    <span class="track-title">主线一：一季报增长</span>
+                    <span class="tag tag-green">新主线确立</span>
                 </div>
-                <p style="font-size: 0.875rem; color: var(--text-secondary);">
-                    格林达（2板）是北方华创、中芯国际的回流补涨，但谁也带不动。午盘芯片板块依然净流出 -162 亿，这是典型的<strong>"假涨停、真出货"</strong>。中高位芯片股明天大概率继续补跌，<strong>回避</strong>。
-                </p>
+                <div class="track-body">
+                    不是任何股的补涨。它本身是 <strong>4/27 暗线→4/28 明牌</strong>的独立主线。板块强度 <span class="col-pos">17455</span>（断层第一）、主力净流入 <span class="col-pos">+48.75 亿</span>（全市场最大）。飞马国际（2板）走连板模式；恒工精密、宏英智能走首板梯队。机构在买，板块梯队完整，<strong>已确立为新主线</strong>。
+                </div>
             </div>
 
-            <div class="mainline-card rotating">
-                <div class="mainline-header">
-                    <div class="mainline-dot orange"></div>
-                    <h3>次线：医药/CRO（轮动启动）</h3>
-                    <span class="badge badge-orange">观察中</span>
+            <div class="track-item retreat">
+                <div class="track-head">
+                    <div class="track-indicator red"></div>
+                    <span class="track-title">主线二：芯片/半导体</span>
+                    <span class="tag tag-red">退潮确认</span>
                 </div>
-                <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                <div class="track-body">
+                    格林达（2板）是北方华创、中芯国际的回流补涨，但谁也带不动。午盘芯片板块依然净流出 <span class="col-neg">-162 亿</span>，典型的<strong>"假涨停、真出货"</strong>。中高位芯片股明天大概率继续补跌，<span class="col-neg">回避</span>。
+                </div>
+            </div>
+
+            <div class="track-item rotating">
+                <div class="track-head">
+                    <div class="track-indicator amber"></div>
+                    <span class="track-title">次线：医药/CRO</span>
+                    <span class="tag tag-amber">观察中</span>
+                </div>
+                <div class="track-body">
                     CRO 是独立逻辑（药明康德一季报大增 + 机构回补）。药明康德（千亿首板封 8.4 亿）带方向，但凯莱英炸板说明跟风还没跟上。<strong>跟踪，不先手</strong>。
-                </p>
+                </div>
             </div>
         </div>
 
-        <!-- 第一梯队 -->
+        <!-- ──── 第一梯队 ──── -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title">第一梯队：最高辨识度核心</div>
+            <div class="card-head">
+                <div class="card-label"><span class="step-num">T</span> 第一梯队 · 最高辨识度核心</div>
             </div>
-            <div class="rank-item">
-                <div class="rank-badge rank-1">🥇</div>
-                <div class="rank-info">
-                    <div class="rank-stock">603318 水发燃气</div>
-                    <div class="rank-detail">5板/7天6板 · 市场最高板</div>
+            <div class="tier-row">
+                <div class="tier-num tier-1">1</div>
+                <div class="tier-info">
+                    <div class="tier-name">603318 水发燃气</div>
+                    <div class="tier-desc">5板 / 7天6板 · 市场最高板</div>
                 </div>
-                <div class="rank-tag">燃气轮机+芯片+氦气</div>
+                <div class="tier-chip">燃气轮机 + 芯片 + 氦气</div>
             </div>
-            <div class="rank-item">
-                <div class="rank-badge rank-2"></div>
-                <div class="rank-info">
-                    <div class="rank-stock">600152 维科技术</div>
-                    <div class="rank-detail">3板/12天6板 · 锂电穿越龙</div>
+            <div class="tier-row">
+                <div class="tier-num tier-2">2</div>
+                <div class="tier-info">
+                    <div class="tier-name">600152 维科技术</div>
+                    <div class="tier-desc">3板 / 12天6板 · 锂电穿越龙</div>
                 </div>
-                <div class="rank-tag">封成比 0.09（全市场最优）</div>
+                <div class="tier-chip">封成比 0.09 全市场最优</div>
             </div>
-            <div class="rank-item">
-                <div class="rank-badge rank-3"></div>
-                <div class="rank-info">
-                    <div class="rank-stock">002210 飞马国际</div>
-                    <div class="rank-detail">2板 · 新主线 1进2 先锋</div>
+            <div class="tier-row">
+                <div class="tier-num tier-3">3</div>
+                <div class="tier-info">
+                    <div class="tier-name">002210 飞马国际</div>
+                    <div class="tier-desc">2板 · 新主线 1进2 先锋</div>
                 </div>
-                <div class="rank-tag">一季报增长 +1610%</div>
+                <div class="tier-chip">一季报增长 +1610%</div>
             </div>
         </div>
 
-        <!-- 四、亏钱效应探测 -->
+        <!-- ──── 四、亏钱效应探测 ──── -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title">四、亏钱效应探测</div>
-                <span class="badge badge-red">核按钮监控</span>
+            <div class="card-head">
+                <div class="card-label"><span class="step-num">4</span> 亏钱效应探测</div>
+                <span class="tag tag-red">核按钮监控</span>
             </div>
-            
-            <h4 style="margin-bottom: 1rem;">今日跌幅榜 Top5:</h4>
-            <table>
-                <thead><tr><th>排名</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
+
+            <table class="tbl">
+                <thead><tr><th>#</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
                 <tbody>
-                    <tr><td>1</td><td>中坚科技</td><td>-10.00%</td><td>首板跌停，无流动性</td></tr>
-                    <tr><td>2</td><td>华胜天成</td><td>-10.00%</td><td><span class="badge badge-red">芯片方向，昨日资金出逃</span></td></tr>
-                    <tr><td>3</td><td>浙江世宝</td><td>-10.01%</td><td>汽车配件补跌</td></tr>
-                    <tr><td>4</td><td>永太科技</td><td>-9.99%</td><td>锂电+芯片双杀</td></tr>
-                    <tr><td>5</td><td>九鼎投资</td><td>-10.00%</td><td><span class="badge badge-red">2 连跌停</span></td></tr>
+                    <tr><td>1</td><td class="col-dim">中坚科技</td><td class="col-neg">-10.00%</td><td>首板跌停，无流动性</td></tr>
+                    <tr><td>2</td><td class="col-dim">华胜天成</td><td class="col-neg">-10.00%</td><td><span class="tag tag-red">芯片方向</span> 昨日资金出逃</td></tr>
+                    <tr><td>3</td><td class="col-dim">浙江世宝</td><td class="col-neg">-10.01%</td><td>汽车配件补跌</td></tr>
+                    <tr><td>4</td><td class="col-dim">永太科技</td><td class="col-neg">-9.99%</td><td>锂电+芯片双杀</td></tr>
+                    <tr><td>5</td><td class="col-dim">九鼎投资</td><td class="col-neg">-10.00%</td><td><span class="tag tag-red">2 连跌停</span></td></tr>
                 </tbody>
             </table>
 
-            <div class="alert-box">
-                <div class="alert-title">⚠ 核按钮预警</div>
-                <p style="font-size: 0.875rem;">
-                    九鼎投资 2 连跌停、东珠生态 2 连跌停——高位股走"A 字杀"。如果明天出现 3 连跌停，确认进入全面退潮期。<br>
-                    芯片方向跌停 5 只，说明芯片退潮正在扩散到首板。<br>
-                    <strong>明天早上 30 分钟不要追高</strong>，等恐慌释放完。
-                </p>
+            <div class="alert-panel">
+                <div class="alert-head">核按钮预警</div>
+                <p>九鼎投资 2 连跌停、东珠生态 2 连跌停——高位股走"A 字杀"。如果明天出现 3 连跌停，确认进入全面退潮期。<br>芯片方向跌停 5 只，说明芯片退潮正在扩散到首板。<br><strong>明天早上 30 分钟不要追高</strong>，等恐慌释放完。</p>
             </div>
         </div>
 
-        <!-- 五、明日预案 -->
+        <!-- ──── 五、明日预案 ──── -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title">五、明日预案</div>
-                <span class="badge badge-blue">偏防守</span>
+            <div class="card-head">
+                <div class="card-label"><span class="step-num">5</span> 明日预案</div>
+                <span class="tag tag-blue">偏防守</span>
             </div>
-            
-            <p style="margin-bottom: 1rem;"><strong>总体策略：</strong>偏防守，仓位 3-5 成</p>
-            
-            <table style="margin-bottom: 1.5rem;">
+
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1.25rem;">
+                <strong style="color:var(--text-primary)">总体策略：</strong>偏防守，仓位 <span style="color:var(--amber-bright)">3-5 成</span>
+            </p>
+
+            <table class="tbl" style="margin-bottom:1.5rem;">
                 <thead><tr><th>维度</th><th>建议</th></tr></thead>
                 <tbody>
-                    <tr><td>进攻/防守</td><td>防守为主</td></tr>
-                    <tr><td>操作模式</td><td>首板 > 低吸 > 观望 > 接力</td></tr>
-                    <tr><td>高标接力</td><td>❌ 不做。5 板水发燃气在退潮氛围下打 5 进 6 = 接飞刀</td></tr>
-                    <tr><td>2 进 3</td><td>⚠️ 只做飞马国际（一季报增长线）换手最强板</td></tr>
-                    <tr><td>1 进 2</td><td>✅ 首选。聚焦一季报增长方向（宏英智能、恒工精密等）</td></tr>
+                    <tr><td class="col-dim">进攻/防守</td><td>防守为主</td></tr>
+                    <tr><td class="col-dim">操作模式</td><td>首板 > 低吸 > 观望 > 接力</td></tr>
+                    <tr><td class="col-dim">高标接力</td><td class="col-neg">不做 — 5板水发燃气在退潮氛围下打 5进6 = 接飞刀</td></tr>
+                    <tr><td class="col-dim">2进3</td><td class="col-warn">仅飞马国际（一季报增长线）换手最强板</td></tr>
+                    <tr><td class="col-dim">1进2</td><td class="col-pos">首选 — 聚焦一季报增长方向（宏英智能、恒工精密等）</td></tr>
                 </tbody>
             </table>
 
-            <h4 style="margin-bottom: 1rem;">重点方向</h4>
-            <table>
-                <thead><tr><th>方向</th><th>核心标的</th><th>条件</th></tr></thead>
+            <table class="tbl">
+                <thead><tr><th>方向</th><th>核心标的</th><th>触发条件</th></tr></thead>
                 <tbody>
-                    <tr><td>✅ 一季报增长（首选）</td><td>飞马国际（2板）</td><td>换手 2 进 3，封单 > 5000 万</td></tr>
-                    <tr><td>✅ 一季报增长（首板）</td><td>宏英智能（1板）</td><td>观察 1 进 2 竞价，高开 3-5%+量比 > 10</td></tr>
-                    <tr><td>🟡 算力（跟踪）</td><td>利通电子（1板）</td><td>最强首板封单，观察是否开板换手</td></tr>
-                    <tr><td>✅ 医药/CRO（低吸）</td><td>药明康德（1板）</td><td>观察 1 进 2，换手板可小仓位跟随</td></tr>
-                    <tr><td>✅ 持仓 600152（持有）</td><td>维科技术（3板）</td><td>明日观察 15.20 支撑，冲高 16.50+ 滞涨则卖半</td></tr>
+                    <tr><td class="col-pos">一季报增长 (首选)</td><td class="col-dim">飞马国际 (2板)</td><td>换手 2进3，封单 > 5000万</td></tr>
+                    <tr><td class="col-pos">一季报增长 (首板)</td><td class="col-dim">宏英智能 (1板)</td><td>1进2 竞价，高开 3-5% + 量比 > 10</td></tr>
+                    <tr><td class="col-warn">算力 (跟踪)</td><td class="col-dim">利通电子 (1板)</td><td>最强首板封单，观察开板换手</td></tr>
+                    <tr><td class="col-pos">医药/CRO (低吸)</td><td class="col-dim">药明康德 (1板)</td><td>1进2 换手板可小仓位跟随</td></tr>
+                    <tr><td class="col-pos">持仓 600152</td><td class="col-dim">维科技术 (3板)</td><td>观察 15.20 支撑，冲高 16.50+ 滞涨则卖半</td></tr>
                 </tbody>
             </table>
 
-            <div class="alert-box" style="margin-top: 1.5rem;">
-                <div class="alert-title">🚫 回避方向</div>
-                <ul style="font-size: 0.875rem; padding-left: 1.5rem; margin-top: 0.5rem;">
-                    <li>❌ 芯片中高位 - 主力 -162 亿出逃，补跌第一波还没结束</li>
-                    <li>❌ 锂电跟风 - 板块已无板块效应</li>
-                    <li>❌ 高位反包板 - 金螳螂等明天大概率低开</li>
-                    <li>❌ 炸板烂板票 - 德才股份炸 16 次，明天核按钮预期</li>
-                    <li> 高价股（>20 元）- 罗曼股份 156 元，不符合低价策略</li>
+            <div class="alert-panel">
+                <div class="alert-head">回避方向</div>
+                <ul>
+                    <li>芯片中高位 — 主力 <strong>-162 亿</strong> 出逃，补跌第一波还没结束</li>
+                    <li>锂电跟风 — 板块已无板块效应</li>
+                    <li>高位反包板 — 金螳螂等明天大概率低开</li>
+                    <li>炸板烂板票 — 德才股份炸 16 次，明天核按钮预期</li>
+                    <li>高价股 (>20元) — 罗曼股份 156 元，不符合低价策略</li>
                 </ul>
             </div>
         </div>
 
-        <!-- 军师总结 -->
-        <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%); border-color: var(--accent-blue);">
-            <div class="card-header">
-                <div class="card-title">💡 军师总结</div>
+        <!-- ──── 军师总结 ──── -->
+        <div class="conclusion-panel">
+            <div class="card-label" style="margin-bottom:1rem;">
+                <span class="step-num" style="border-color:var(--cyan-bright);color:var(--cyan-bright);background:rgba(57,210,192,0.08);">Σ</span>
+                军师总结
             </div>
-            <p style="font-size: 1rem; line-height: 1.8;">
-                今天市场在<strong>旧的废墟上建新的房子</strong>。芯片的断壁残垣还在冒烟，但一季报增长的钢筋骨架已经立起来了。明天核心看一件事：<strong>资金是继续砸盘出逃，还是会回流业绩线做持续行情</strong>。防守为主，只吃确定性，不赌小概率。
-            </p>
+            <p>今天市场在<strong>旧的废墟上建新的房子</strong>。芯片的断壁残垣还在冒烟，但一季报增长的钢筋骨架已经立起来了。明天核心看一件事：<strong>资金是继续砸盘出逃，还是会回流业绩线做持续行情</strong>。防守为主，只吃确定性，不赌小概率。</p>
         </div>
+
     </div>
+
+    <!-- ═══ CLOCK SCRIPT ═══ -->
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
 </body>
 </html>
