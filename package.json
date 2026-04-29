@@ -18,9 +18,14 @@
       "main.js",
       "preload.js",
       "index.html",
-      "data.json",
       "launcher.js",
       "Alpha-Q.bat"
+    ],
+    "extraResources": [
+      {
+        "from": "data.json",
+        "to": "data.json"
+      }
     ],
     "win": {
       "target": [

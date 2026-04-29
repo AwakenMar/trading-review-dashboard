@@ -33,20 +33,40 @@ var fs = require('fs');
 var mainWindow = null;
 var dataWatcher = null;
 
-// ── Resolve data.json path ──
-function getDataPath() {
+// ── Base data directory: next to the exe in packaged mode ──
+function getBaseDir() {
     if (app.isPackaged) {
-        return path.join(path.dirname(app.getPath('exe')), 'data.json');
+        return path.dirname(app.getPath('exe'));
     }
-    return path.join(__dirname, 'data.json');
+    return __dirname;
+}
+
+// ── Resolve data.json path ──
+// In packaged mode, data.json lives next to the exe (user can edit it directly).
+// On first run after install, we copy it from resources/ to exe directory.
+function getDataPath() {
+    var baseDir = getBaseDir();
+    var targetPath = path.join(baseDir, 'data.json');
+
+    // First run: copy from bundled resources to exe directory
+    if (app.isPackaged && !fs.existsSync(targetPath)) {
+        var bundledPath = path.join(process.resourcesPath, 'data.json');
+        if (fs.existsSync(bundledPath)) {
+            try {
+                fs.copyFileSync(bundledPath, targetPath);
+                console.log('[Init] Copied data.json to:', targetPath);
+            } catch (err) {
+                console.warn('[Init] Failed to copy data.json:', err.message);
+            }
+        }
+    }
+    return targetPath;
 }
 
 // ── Resolve history directory path ──
+// Always next to the exe (packaged) or in project dir (dev)
 function getHistoryDir() {
-    if (app.isPackaged) {
-        return path.join(path.dirname(app.getPath('exe')), 'history');
-    }
-    return path.join(__dirname, 'history');
+    return path.join(getBaseDir(), 'history');
 }
 
 // ── Ensure history directory exists ──
