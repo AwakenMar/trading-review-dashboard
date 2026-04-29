@@ -32,6 +32,8 @@ var fs = require('fs');
 
 var mainWindow = null;
 var dataWatcher = null;
+var apiServer = null;
+var API_PORT = 18901;
 
 // ── Base data directory ──
 // In packaged mode, data and history live next to the exe.
@@ -229,6 +231,11 @@ function registerIpc() {
             return { success: false, error: err.message };
         }
     });
+
+    // ── API: Get current API server port ──
+    ipcMain.handle('get-api-port', function () {
+        return API_PORT;
+    });
 }
 
 // ── File Watcher: Auto-reload when data.json changes ──
@@ -257,11 +264,125 @@ function startDataWatcher() {
     }
 }
 
+// ── Local HTTP API Server (for QwenPaw / external tools) ──
+// Provides REST endpoints for pushing data into the terminal.
+// POST /api/update-data  — Write JSON data to data.json + history
+// GET  /api/status       — Return API server & data status
+// POST /api/push-report  — Alias for /api/update-data
+function startApiServer() {
+    var http = require('http');
+
+    apiServer = http.createServer(function (req, res) {
+        // CORS headers for local access
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        if (req.method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+            return;
+        }
+
+        // ── GET /api/status ──
+        if (req.method === 'GET' && req.url === '/api/status') {
+            var statusInfo = {
+                success: true,
+                service: 'Alpha-Q Terminal API',
+                version: '3.2',
+                port: API_PORT,
+                dataPath: getDataPath(),
+                historyDir: getHistoryDir(),
+                uptime: process.uptime()
+            };
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(statusInfo));
+            return;
+        }
+
+        // ── POST /api/update-data or /api/push-report ──
+        if (req.method === 'POST' && (req.url === '/api/update-data' || req.url === '/api/push-report')) {
+            var body = '';
+            req.on('data', function (chunk) { body += chunk; });
+            req.on('end', function () {
+                try {
+                    var data = JSON.parse(body);
+
+                    // Validate required fields
+                    if (!data.meta || !data.marketOverview) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, error: '数据格式错误：缺少 meta 或 marketOverview 字段' }));
+                        return;
+                    }
+
+                    // Write to data.json
+                    var dataPath = getDataPath();
+                    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2), 'utf-8');
+                    console.log('[API] data.json updated:', dataPath);
+
+                    // Write to history directory
+                    var dir = ensureHistoryDir();
+                    var dateStr = data.meta.date || new Date().toISOString().split('T')[0];
+                    var historyPath = path.join(dir, dateStr + '.json');
+                    fs.writeFileSync(historyPath, JSON.stringify(data, null, 2), 'utf-8');
+                    console.log('[API] History saved:', historyPath);
+
+                    // Notify renderer process to refresh
+                    if (mainWindow && !mainWindow.isDestroyed()) {
+                        mainWindow.webContents.send('data-updated', data);
+                        mainWindow.webContents.send('api-push-received', {
+                            date: dateStr,
+                            source: 'API',
+                            timestamp: Date.now()
+                        });
+                    }
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({
+                        success: true,
+                        message: '复盘数据已写入',
+                        dataPath: dataPath,
+                        historyPath: historyPath,
+                        date: dateStr
+                    }));
+
+                } catch (err) {
+                    console.error('[API] Error processing request:', err.message);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: err.message }));
+                }
+            });
+            return;
+        }
+
+        // ── 404 for everything else ──
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Not found. Available: GET /api/status, POST /api/update-data' }));
+    });
+
+    apiServer.listen(API_PORT, '127.0.0.1', function () {
+        console.log('[API] Alpha-Q Terminal API running on http://127.0.0.1:' + API_PORT);
+    });
+
+    apiServer.on('error', function (err) {
+        if (err.code === 'EADDRINUSE') {
+            console.warn('[API] Port ' + API_PORT + ' already in use, trying ' + (API_PORT + 1));
+            API_PORT += 1;
+            apiServer.listen(API_PORT, '127.0.0.1', function () {
+                console.log('[API] Alpha-Q Terminal API running on http://127.0.0.1:' + API_PORT);
+            });
+        } else {
+            console.error('[API] Server error:', err.message);
+        }
+    });
+}
+
 // ── App Lifecycle ──
 app.whenReady().then(function () {
     registerIpc();
     createWindow();
     startDataWatcher();
+    startApiServer();
 
     app.on('activate', function () {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -274,6 +395,10 @@ app.on('window-all-closed', function () {
     if (dataWatcher) {
         dataWatcher.close();
         dataWatcher = null;
+    }
+    if (apiServer) {
+        apiServer.close();
+        apiServer = null;
     }
     app.quit();
 });

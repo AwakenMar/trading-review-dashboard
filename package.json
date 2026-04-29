@@ -1,7 +1,7 @@
 {
   "name": "alpha-q-terminal",
-  "version": "3.1.0",
-  "description": "Alpha-Q 3.1 - 交互式交易复盘终端 (Electron Desktop)",
+  "version": "3.2.0",
+  "description": "Alpha-Q 3.2 - 交互式交易复盘终端 (Electron Desktop + HTTP API)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

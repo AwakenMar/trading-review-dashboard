@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALPHA-Q 3.0 // 交互式交易终端</title>
+    <title>ALPHA-Q 3.2 // 交互式交易终端</title>
     <style>
         /* ═══════════════════════════════════════════
            INTERACTIVE FINANCIAL TERMINAL THEME v3.0
@@ -140,6 +140,20 @@
         .titlebar-clock {
             color: var(--cyan-bright);
             font-variant-numeric: tabular-nums;
+        }
+
+        .api-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            background: rgba(63,185,80,0.08);
+            border: 1px solid rgba(63,185,80,0.2);
+            font-size: 0.55rem;
+            font-weight: 600;
+            color: var(--green-bright);
+            letter-spacing: 0.3px;
         }
 
         .titlebar-btns {
@@ -960,11 +974,15 @@
         <div class="titlebar-brand">
             <div class="titlebar-logo">&alpha;</div>
             <span class="titlebar-name">ALPHA-Q</span>
-            <span class="titlebar-version">v3.0</span>
+            <span class="titlebar-version">v3.2</span>
         </div>
         <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
             <span class="titlebar-clock" id="clock">--:--:--</span>
+            <span class="api-status" id="apiStatus" title="API 服务状态" style="display:none;">
+                <svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:middle;"><circle cx="5" cy="5" r="4" fill="#3FB950"/></svg>
+                <span id="apiPortText">API</span>
+            </span>
         </div>
         <div class="titlebar-btns">
             <button class="titlebar-btn" id="btnMinimize" title="最小化">
@@ -1025,7 +1043,7 @@
             <div class="content-header">
                 <div class="date-banner">
                     <h2>REVIEW <span>//</span> <span id="review-date">----/--/--</span></h2>
-                    <p class="meta">逻辑深度复盘 · 桌面终端 v3.0 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <p class="meta">逻辑深度复盘 · 桌面终端 v3.2 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
@@ -1230,10 +1248,25 @@
                 updateFileStatus('watching', 'AUTO');
             });
 
+            // Listen for API push events
+            window.electronAPI.onApiPushReceived(function (info) {
+                showToast('API 推送: ' + info.date + ' 复盘数据已接收', 'success');
+            });
+
             // Show file status
             window.electronAPI.getDataPath().then(function (p) {
                 console.log('[Data] Path:', p);
                 updateFileStatus('watching', 'LIVE');
+            });
+
+            // Show API status
+            window.electronAPI.getApiPort().then(function (port) {
+                var apiEl = document.getElementById('apiStatus');
+                var portEl = document.getElementById('apiPortText');
+                if (apiEl && portEl) {
+                    portEl.textContent = 'API:' + port;
+                    apiEl.style.display = 'inline-flex';
+                }
             });
         } else {
             // Web mode: hide Electron-specific elements, adjust layout

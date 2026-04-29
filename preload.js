@@ -28,5 +28,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveReport: function (dateStr, data) { return ipcRenderer.invoke('save-report', dateStr, data); },
     listHistory: function () { return ipcRenderer.invoke('list-history'); },
     loadHistory: function (dateStr) { return ipcRenderer.invoke('load-history', dateStr); },
-    exportClipboard: function (text) { return ipcRenderer.invoke('export-clipboard', text); }
+    exportClipboard: function (text) { return ipcRenderer.invoke('export-clipboard', text); },
+
+    // ── API Server ──
+    getApiPort: function () { return ipcRenderer.invoke('get-api-port'); },
+    onApiPushReceived: function (callback) {
+        ipcRenderer.on('api-push-received', function (_event, info) {
+            callback(info);
+        });
+    }
 });
