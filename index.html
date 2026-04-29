@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALPHA-Q 2.0 // 交易复盘终端</title>
+    <title>ALPHA-Q 2.1 // 交互式交易终端</title>
     <style>
         /* ═══════════════════════════════════════════
-           BLOOMBERG-STYLE FINANCIAL TERMINAL THEME
+           INTERACTIVE FINANCIAL TERMINAL THEME v2.1
            ═══════════════════════════════════════════ */
         :root {
             /* ── Core Palette ── */
@@ -23,16 +23,16 @@
             --text-muted:     #484F58;
 
             /* ── Financial Semantic Colors ── */
-            --green-bright:   #3FB950;   /* 盈利 / 超预期 */
+            --green-bright:   #3FB950;
             --green-dim:      #238636;
             --green-bg:       rgba(63,185,80,0.08);
-            --red-bright:     #F85149;   /* 亏损 / 低于预期 */
+            --red-bright:     #F85149;
             --red-dim:        #DA3633;
             --red-bg:         rgba(248,81,73,0.08);
-            --amber-bright:   #D29922;   /* 警告 / 观察 */
+            --amber-bright:   #D29922;
             --amber-dim:      #9E6A03;
             --amber-bg:       rgba(210,153,34,0.08);
-            --blue-bright:    #58A6FF;   /* 信息 / 中性 */
+            --blue-bright:    #58A6FF;
             --blue-dim:       #1F6FEB;
             --blue-bg:        rgba(88,166,255,0.08);
             --cyan-bright:    #39D2C0;
@@ -42,6 +42,9 @@
             --radius:    12px;
             --radius-sm: 6px;
             --gap:       1.25rem;
+
+            /* ── Drawer ── */
+            --drawer-width: 420px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -52,6 +55,7 @@
             color: var(--text-primary);
             line-height: 1.65;
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
         }
 
         /* ── Scrollbar ── */
@@ -142,9 +146,128 @@
             font-variant-numeric: tabular-nums;
         }
 
+        .btn-fetch {
+            background: var(--blue-bg);
+            border: 1px solid rgba(88,166,255,0.25);
+            color: var(--blue-bright);
+            padding: 0.35rem 0.85rem;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .btn-fetch:hover {
+            background: rgba(88,166,255,0.15);
+            border-color: var(--blue-bright);
+            box-shadow: 0 0 12px rgba(88,166,255,0.15);
+        }
+
+        .btn-fetch:active {
+            transform: scale(0.96);
+        }
+
+        .btn-fetch.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
         /* ══════════════════
-           MAIN CONTAINER
+           TAB NAVIGATION
            ══════════════════ */
+        .tab-nav {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            display: flex;
+            gap: 0;
+            position: sticky;
+            top: 52px;
+            z-index: 99;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            padding: 0.85rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-secondary);
+            background: rgba(88,166,255,0.03);
+        }
+
+        .tab-btn.active {
+            color: var(--blue-bright);
+            border-bottom-color: var(--blue-bright);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--blue-bright);
+            box-shadow: 0 0 8px rgba(88,166,255,0.4);
+        }
+
+        .tab-btn .tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            background: var(--bg-hover);
+            border-radius: 8px;
+            font-size: 0.58rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+            vertical-align: middle;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .tab-btn.active .tab-count {
+            background: var(--blue-bg);
+            color: var(--blue-bright);
+        }
+
+        /* ══════════════════
+           TAB CONTENT PANELS
+           ══════════════════ */
+        .tab-panel {
+            display: none;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .tab-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .container {
             max-width: 1440px;
             margin: 0 auto;
@@ -190,13 +313,13 @@
             border-radius: var(--radius);
             padding: 1.75rem;
             margin-bottom: var(--gap);
-            transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+            transition: border-color 0.3s ease-in-out, transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
             will-change: transform;
         }
 
         .card:hover {
             border-color: #3D444D;
-            transform: scale(1.02);
+            transform: scale(1.015);
             box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(88,166,255,0.06);
         }
 
@@ -216,11 +339,11 @@
         }
 
         .card.collapsible .card-head::after {
-            content: '▾';
+            content: '\25BE';
             font-size: 0.7rem;
             color: var(--text-muted);
             margin-left: 0.75rem;
-            transition: transform 0.25s ease;
+            transition: transform 0.3s ease-in-out;
             flex-shrink: 0;
         }
 
@@ -229,10 +352,10 @@
         }
 
         .card.collapsible .card-body {
-            max-height: 800px;
+            max-height: 1200px;
             overflow: hidden;
             opacity: 1;
-            transition: max-height 0.4s ease, opacity 0.25s ease, padding 0.3s ease;
+            transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out;
         }
 
         .card.collapsible.collapsed .card-body {
@@ -279,6 +402,7 @@
             letter-spacing: 0.3px;
             text-transform: uppercase;
             border: 1px solid transparent;
+            transition: all 0.3s ease-in-out;
         }
 
         .tag-green  { background: var(--green-bg);  color: var(--green-bright);  border-color: rgba(63,185,80,0.2); }
@@ -288,7 +412,6 @@
 
         /* ══════════════════
            TABLE SYSTEM (BLOOMBERG-STYLE)
-           No vertical lines, strong headers, high contrast
            ══════════════════ */
         .tbl {
             width: 100%;
@@ -316,6 +439,7 @@
             padding: 0.7rem 1rem;
             border-bottom: 1px solid var(--border-subtle);
             color: var(--text-secondary);
+            transition: background 0.15s ease, color 0.15s ease;
         }
 
         .tbl tbody td:first-child { padding-left: 0; }
@@ -356,6 +480,21 @@
             box-shadow: inset 3px 0 0 var(--blue-bright);
         }
 
+        /* ── Clickable Stock Code ── */
+        .stock-code {
+            color: var(--cyan-bright);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px dashed rgba(57,210,192,0.3);
+            padding-bottom: 1px;
+        }
+
+        .stock-code:hover {
+            color: #fff;
+            border-bottom-color: var(--cyan-bright);
+            text-shadow: 0 0 6px rgba(57,210,192,0.4);
+        }
+
         /* ══════════════════
            METRIC GRID
            ══════════════════ */
@@ -372,6 +511,11 @@
             border-radius: var(--radius-sm);
             padding: 1.25rem 1rem;
             text-align: center;
+            transition: border-color 0.3s ease-in-out;
+        }
+
+        .metric-cell:hover {
+            border-color: var(--border);
         }
 
         .metric-cell .m-label {
@@ -411,7 +555,7 @@
             border-radius: var(--radius-sm);
             padding: 1.25rem;
             margin-bottom: 0.75rem;
-            transition: background 0.15s;
+            transition: background 0.3s ease-in-out, border-color 0.3s ease-in-out;
         }
 
         .track-item:hover { background: var(--bg-hover); }
@@ -461,10 +605,10 @@
             border-radius: var(--radius-sm);
             padding: 1rem 1.25rem;
             margin-bottom: 0.6rem;
-            transition: border-color 0.15s;
+            transition: border-color 0.3s ease-in-out, background 0.3s ease-in-out;
         }
 
-        .tier-row:hover { border-color: var(--border); }
+        .tier-row:hover { border-color: var(--border); background: var(--bg-hover); }
 
         .tier-num {
             width: 28px;
@@ -550,7 +694,7 @@
         }
 
         .alert-panel li::before {
-            content: '×';
+            content: '\00D7';
             position: absolute;
             left: 0;
             color: var(--red-bright);
@@ -610,6 +754,223 @@
         .conclusion-panel strong { color: var(--cyan-bright); }
 
         /* ══════════════════
+           DRAWER (SIDE PANEL)
+           ══════════════════ */
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: var(--drawer-width);
+            max-width: 90vw;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border);
+            z-index: 201;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .drawer.open {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .drawer-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+        }
+
+        .drawer-close {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .drawer-close:hover {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .drawer-body {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .drawer-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .drawer-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .drawer-section-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .drawer-kv {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0;
+            font-size: 0.78rem;
+        }
+
+        .drawer-kv .dk-label {
+            color: var(--text-muted);
+        }
+
+        .drawer-kv .dk-value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .drawer-kv .dk-value.pos { color: var(--green-bright); }
+        .drawer-kv .dk-value.neg { color: var(--red-bright); }
+
+        .drawer-text {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.75;
+        }
+
+        .drawer-text strong { color: var(--text-primary); }
+
+        .drawer-tag {
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: 3px;
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .drawer-tag-logic { background: var(--blue-bg); color: var(--blue-bright); }
+        .drawer-tag-risk  { background: var(--red-bg); color: var(--red-bright); }
+        .drawer-tag-action { background: var(--green-bg); color: var(--green-bright); }
+
+        /* ══════════════════
+           NUMBER FLASH EFFECT
+           ══════════════════ */
+        @keyframes flash-number {
+            0% { opacity: 1; }
+            25% { opacity: 0.3; }
+            50% { opacity: 1; }
+            75% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .flash {
+            animation: flash-number 0.6s ease-in-out;
+        }
+
+        /* ══════════════════
+           LOADING SKELETON
+           ══════════════════ */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-hover) 25%, var(--bg-elevated) 50%, var(--bg-hover) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 4px;
+            min-height: 1em;
+            min-width: 3em;
+        }
+
+        /* ══════════════════
+           TOAST NOTIFICATION
+           ══════════════════ */
+        .toast-container {
+            position: fixed;
+            top: 60px;
+            right: 1.5rem;
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1.25rem;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            transform: translateX(120%);
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success { border-left: 3px solid var(--green-bright); }
+        .toast.error   { border-left: 3px solid var(--red-bright); }
+        .toast.info    { border-left: 3px solid var(--blue-bright); }
+
+        .toast-icon {
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        /* ══════════════════
            RESPONSIVE
            ══════════════════ */
         @media (max-width: 1024px) {
@@ -621,7 +982,10 @@
             .container { padding: 1rem; }
             .terminal-bar { padding: 0 1rem; }
             .terminal-subtitle { display: none; }
+            .tab-nav { padding: 0 0.5rem; overflow-x: auto; }
+            .tab-btn { padding: 0.75rem 0.85rem; font-size: 0.65rem; white-space: nowrap; }
             .card { padding: 1.25rem; }
+            .drawer { width: 100vw; max-width: 100vw; }
         }
     </style>
 </head>
@@ -630,310 +994,280 @@
     <!-- ═══ TERMINAL BAR ═══ -->
     <header class="terminal-bar">
         <div class="terminal-brand">
-            <div class="terminal-logo">α</div>
-            <span class="terminal-title">Alpha-Q 2.0</span>
-            <span class="terminal-subtitle">交易复盘终端 · SOP 验证版</span>
+            <div class="terminal-logo">&alpha;</div>
+            <span class="terminal-title">Alpha-Q 2.1</span>
+            <span class="terminal-subtitle">交互式交易终端</span>
         </div>
         <div class="terminal-status">
+            <button class="btn-fetch" id="btnFetch" onclick="fetchData()">Fetch Data</button>
             <span><span class="status-dot"></span>LIVE</span>
             <span class="terminal-time" id="clock">--:--:--</span>
         </div>
     </header>
+
+    <!-- ═══ TAB NAVIGATION ═══ -->
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">
+            市场概览 <span class="tab-count">4</span>
+        </button>
+        <button class="tab-btn" data-tab="logic" onclick="switchTab('logic')">
+            逻辑对账 <span class="tab-count">2</span>
+        </button>
+        <button class="tab-btn" data-tab="plan" onclick="switchTab('plan')">
+            交易预案 <span class="tab-count">2</span>
+        </button>
+    </nav>
 
     <!-- ═══ MAIN ═══ -->
     <div class="container">
 
         <!-- Date Banner -->
         <div class="date-banner">
-            <h2>REVIEW <span>//</span> 2026-04-28</h2>
-            <p class="meta">逻辑深度复盘 · 新SOP验证版 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+            <h2>REVIEW <span>//</span> <span id="review-date">2026-04-28</span></h2>
+            <p class="meta">逻辑深度复盘 · 交互式终端 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
         </div>
 
-        <!-- ──── STEP 0: 错题召回 ──── -->
-        <div class="card collapsible collapsed" id="step0">
-            <div class="card-head" onclick="toggleCard('step0')">
-                <div class="card-label"><span class="step-num">0</span> 历史错题召回</div>
-                <span class="tag tag-amber">修正规则</span>
+        <!-- ═══════════════════════════════════
+             TAB 1: 市场概览
+             ═══════════════════════════════════ -->
+        <div class="tab-panel active visible" id="panel-overview">
+
+            <!-- Step 2: 市场定调 -->
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-label"><span class="step-num">2</span> 市场定调</div>
+                    <span class="tag tag-amber">混沌轮动期</span>
+                </div>
+                <div class="metric-grid" id="indices-grid">
+                    <!-- Filled by JS -->
+                </div>
+                <table class="tbl">
+                    <thead><tr><th>维度</th><th>数据</th><th>结论</th></tr></thead>
+                    <tbody id="sentiment-tbody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+                <div class="insight-box" id="emotion-insight">
+                    <div class="insight-head">情绪周期判定</div>
+                    <p id="emotion-text"></p>
+                </div>
             </div>
-            <div class="card-body">
-                <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75;">
-                    <strong style="color:var(--text-primary)">错题本检索：</strong>检索到 2026-04-28 维科技术弱转强误判记录。今日市场情况：与 4/28 不同，当下芯片主力净流出 <span class="col-neg">-162 亿</span>，跌停 <span class="col-neg">30 家</span>，属于板块级退潮而非横盘整理。因此 <strong style="color:var(--amber-bright)">4/28 "竞价弱≠放弃"的修正规则不完全适用</strong>——板块退潮远比个股分歧危险。
+
+            <!-- Step 3: 主线方向 -->
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-label"><span class="step-num">3</span> 主线方向与地位属性定性</div>
+                </div>
+                <div id="mainlines-container">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Step T: 第一梯队 -->
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-label"><span class="step-num">T</span> 第一梯队 · 最高辨识度核心</div>
+                </div>
+                <div id="top-tier-container">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Step 4: 亏钱效应探测 -->
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-label"><span class="step-num">4</span> 亏钱效应探测</div>
+                    <span class="tag tag-red">核按钮监控</span>
+                </div>
+                <table class="tbl">
+                    <thead><tr><th>#</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
+                    <tbody id="loss-tbody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+                <div class="alert-panel">
+                    <div class="alert-head">核按钮预警</div>
+                    <p id="loss-alert"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════
+             TAB 2: 逻辑对账
+             ═══════════════════════════════════ -->
+        <div class="tab-panel" id="panel-logic">
+
+            <!-- Step 0: 错题召回 -->
+            <div class="card collapsible collapsed" id="step0">
+                <div class="card-head" onclick="toggleCard('step0')">
+                    <div class="card-label"><span class="step-num">0</span> 历史错题召回</div>
+                    <span class="tag tag-amber">修正规则</span>
+                </div>
+                <div class="card-body">
+                    <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75;">
+                        <strong style="color:var(--text-primary)">错题本检索：</strong><span id="error-recall-text"></span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 1: 逻辑对账 -->
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-label"><span class="step-num">1</span> 逻辑对账 · 昨日预期 vs 今日实盘</div>
+                    <span class="tag tag-blue">CORE</span>
+                </div>
+                <table class="tbl">
+                    <thead>
+                        <tr><th>维度</th><th>昨日预期 (4/27)</th><th>今日实盘 (4/28)</th><th>预期差</th></tr>
+                    </thead>
+                    <tbody id="logic-tbody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+                <div class="insight-box" id="correction-insight">
+                    <div class="insight-head">逻辑修正定论</div>
+                    <p id="correction-text"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════
+             TAB 3: 交易预案
+             ═══════════════════════════════════ -->
+        <div class="tab-panel" id="panel-plan">
+
+            <!-- Step 5: 明日预案 -->
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-label"><span class="step-num">5</span> 明日预案</div>
+                    <span class="tag tag-blue">偏防守</span>
+                </div>
+                <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1.25rem;">
+                    <strong style="color:var(--text-primary)">总体策略：</strong><span id="plan-strategy"></span>
                 </p>
-            </div>
-        </div>
-
-        <!-- ──── 一、逻辑对账 ──── -->
-        <div class="card">
-            <div class="card-head">
-                <div class="card-label"><span class="step-num">1</span> 逻辑对账 · 昨日预期 vs 今日实盘</div>
-                <span class="tag tag-blue">CORE</span>
-            </div>
-            <table class="tbl">
-                <thead>
-                    <tr><th>维度</th><th>昨日预期 (4/27)</th><th>今日实盘 (4/28)</th><th>预期差</th></tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="col-dim">芯片/半导体</td>
-                        <td>高潮延续，强者恒强</td>
-                        <td>部分冲高但主力净流出 <span class="col-neg">-162 亿</span>（退潮）</td>
-                        <td><span class="tag tag-red">低于预期</span></td>
-                    </tr>
-                    <tr>
-                        <td class="col-dim">一季报增长</td>
-                        <td>暗线轮动</td>
-                        <td>强度 <span class="col-pos">17455</span> 断层第一，涨停 13 只，净流入 <span class="col-pos">+48.75 亿</span></td>
-                        <td><span class="tag tag-green">超预期</span></td>
-                    </tr>
-                    <tr>
-                        <td class="col-dim">锂电</td>
-                        <td>分歧后仍有修复机会</td>
-                        <td>多氟多 <span class="col-neg">-2.14%</span>、融捷 <span class="col-neg">-0.85%</span>，仅维科技术穿越</td>
-                        <td><span class="tag tag-red">低于预期</span></td>
-                    </tr>
-                    <tr>
-                        <td class="col-dim">600152 维科技术</td>
-                        <td>竞价弱转强，日内穿越</td>
-                        <td>开盘 14.55 (+2%) → 回踩 14.26 不破 → 封死 <span class="col-pos">15.69 (+10%)</span></td>
-                        <td><span class="tag tag-green">符合预期</span></td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="insight-box">
-                <div class="insight-head">逻辑修正定论</div>
-                <p>芯片退潮的信号被低估，一季报增长的爆发力被低估。4/27 半导体高潮本质是<strong>"主力拉升出货"</strong>，而业绩线才是机构真正的承接方向。</p>
-            </div>
-        </div>
-
-        <!-- ──── 二、市场定调 ──── -->
-        <div class="card">
-            <div class="card-head">
-                <div class="card-label"><span class="step-num">2</span> 市场定调</div>
-                <span class="tag tag-amber">混沌轮动期</span>
-            </div>
-
-            <div class="metric-grid">
-                <div class="metric-cell">
-                    <div class="m-label">上证指数</div>
-                    <div class="m-value m-neg">-0.19%</div>
-                    <div class="m-sub m-muted" style="color:var(--text-muted)">权重护盘</div>
-                </div>
-                <div class="metric-cell">
-                    <div class="m-label">深证成指</div>
-                    <div class="m-value m-neg">-1.10%</div>
-                    <div class="m-sub" style="color:var(--text-muted)">指数分化</div>
-                </div>
-                <div class="metric-cell">
-                    <div class="m-label">创业板指</div>
-                    <div class="m-value m-neg">-1.43%</div>
-                    <div class="m-sub" style="color:var(--text-muted)">成长承压</div>
-                </div>
-                <div class="metric-cell">
-                    <div class="m-label">成交额</div>
-                    <div class="m-value m-neu">2.536<span style="font-size:0.85rem;font-weight:400;color:var(--text-muted)"> 万亿</span></div>
-                    <div class="m-sub m-neg">▼ 600 亿</div>
+                <table class="tbl" style="margin-bottom:1.5rem;">
+                    <thead><tr><th>维度</th><th>建议</th></tr></thead>
+                    <tbody id="plan-guide-tbody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+                <table class="tbl">
+                    <thead><tr><th>方向</th><th>核心标的</th><th>触发条件</th></tr></thead>
+                    <tbody id="plan-action-tbody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+                <div class="alert-panel">
+                    <div class="alert-head">回避方向</div>
+                    <ul id="avoid-list">
+                        <!-- Filled by JS -->
+                    </ul>
                 </div>
             </div>
 
-            <table class="tbl">
-                <thead><tr><th>维度</th><th>数据</th><th>结论</th></tr></thead>
-                <tbody>
-                    <tr><td class="col-dim">涨跌比</td><td>~2017 : ~4499 (1:2.25)</td><td>普跌格局，亏钱效应扩散</td></tr>
-                    <tr><td class="col-dim">涨停</td><td>59 家 (昨日 77 家)</td><td>情绪降温</td></tr>
-                    <tr><td class="col-dim">跌停</td><td class="col-neg">30 家 (昨日个位数)</td><td><span class="tag tag-red">大幅增长</span></td></tr>
-                    <tr><td class="col-dim">连板高度</td><td>5 板 (水发燃气 7天6板)</td><td>高度维持但边缘化</td></tr>
-                    <tr><td class="col-dim">晋级率 2→3</td><td>16.67% (6只仅1只晋级)</td><td>接力意愿极弱</td></tr>
-                    <tr><td class="col-dim">A股均涨跌幅</td><td class="col-neg">-1.042%</td><td>全场普跌确认</td></tr>
-                </tbody>
-            </table>
-
-            <div class="insight-box">
-                <div class="insight-head">情绪周期判定</div>
-                <p>不是冰点（涨停仍有 59 家），也不是退潮（一季报增长净流入 48 亿），而是<strong>旧主线（芯片）资金出逃 → 新主线（业绩线）建仓的通道</strong>。过渡段最容易出现"早盘追高→尾盘吃面"的坑，<strong>交易难度极高</strong>。</p>
-            </div>
-        </div>
-
-        <!-- ──── 三、主线方向 ──── -->
-        <div class="card">
-            <div class="card-head">
-                <div class="card-label"><span class="step-num">3</span> 主线方向与地位属性定性</div>
-            </div>
-
-            <div class="track-item">
-                <div class="track-head">
-                    <div class="track-indicator"></div>
-                    <span class="track-title">主线一：一季报增长</span>
-                    <span class="tag tag-green">新主线确立</span>
+            <!-- 军师总结 -->
+            <div class="conclusion-panel">
+                <div class="card-label" style="margin-bottom:1rem;">
+                    <span class="step-num" style="border-color:var(--cyan-bright);color:var(--cyan-bright);background:rgba(57,210,192,0.08);">&Sigma;</span>
+                    军师总结
                 </div>
-                <div class="track-body">
-                    不是任何股的补涨。它本身是 <strong>4/27 暗线→4/28 明牌</strong>的独立主线。板块强度 <span class="col-pos">17455</span>（断层第一）、主力净流入 <span class="col-pos">+48.75 亿</span>（全市场最大）。飞马国际（2板）走连板模式；恒工精密、宏英智能走首板梯队。机构在买，板块梯队完整，<strong>已确立为新主线</strong>。
-                </div>
+                <p id="conclusion-text"></p>
             </div>
-
-            <div class="track-item retreat">
-                <div class="track-head">
-                    <div class="track-indicator red"></div>
-                    <span class="track-title">主线二：芯片/半导体</span>
-                    <span class="tag tag-red">退潮确认</span>
-                </div>
-                <div class="track-body">
-                    格林达（2板）是北方华创、中芯国际的回流补涨，但谁也带不动。午盘芯片板块依然净流出 <span class="col-neg">-162 亿</span>，典型的<strong>"假涨停、真出货"</strong>。中高位芯片股明天大概率继续补跌，<span class="col-neg">回避</span>。
-                </div>
-            </div>
-
-            <div class="track-item rotating">
-                <div class="track-head">
-                    <div class="track-indicator amber"></div>
-                    <span class="track-title">次线：医药/CRO</span>
-                    <span class="tag tag-amber">观察中</span>
-                </div>
-                <div class="track-body">
-                    CRO 是独立逻辑（药明康德一季报大增 + 机构回补）。药明康德（千亿首板封 8.4 亿）带方向，但凯莱英炸板说明跟风还没跟上。<strong>跟踪，不先手</strong>。
-                </div>
-            </div>
-        </div>
-
-        <!-- ──── 第一梯队 ──── -->
-        <div class="card">
-            <div class="card-head">
-                <div class="card-label"><span class="step-num">T</span> 第一梯队 · 最高辨识度核心</div>
-            </div>
-            <div class="tier-row">
-                <div class="tier-num tier-1">1</div>
-                <div class="tier-info">
-                    <div class="tier-name">603318 水发燃气</div>
-                    <div class="tier-desc">5板 / 7天6板 · 市场最高板</div>
-                </div>
-                <div class="tier-chip">燃气轮机 + 芯片 + 氦气</div>
-            </div>
-            <div class="tier-row">
-                <div class="tier-num tier-2">2</div>
-                <div class="tier-info">
-                    <div class="tier-name">600152 维科技术</div>
-                    <div class="tier-desc">3板 / 12天6板 · 锂电穿越龙</div>
-                </div>
-                <div class="tier-chip">封成比 0.09 全市场最优</div>
-            </div>
-            <div class="tier-row">
-                <div class="tier-num tier-3">3</div>
-                <div class="tier-info">
-                    <div class="tier-name">002210 飞马国际</div>
-                    <div class="tier-desc">2板 · 新主线 1进2 先锋</div>
-                </div>
-                <div class="tier-chip">一季报增长 +1610%</div>
-            </div>
-        </div>
-
-        <!-- ──── 四、亏钱效应探测 ──── -->
-        <div class="card">
-            <div class="card-head">
-                <div class="card-label"><span class="step-num">4</span> 亏钱效应探测</div>
-                <span class="tag tag-red">核按钮监控</span>
-            </div>
-
-            <table class="tbl">
-                <thead><tr><th>#</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
-                <tbody>
-                    <tr><td>1</td><td class="col-dim">中坚科技</td><td class="col-neg">-10.00%</td><td>首板跌停，无流动性</td></tr>
-                    <tr><td>2</td><td class="col-dim">华胜天成</td><td class="col-neg">-10.00%</td><td><span class="tag tag-red">芯片方向</span> 昨日资金出逃</td></tr>
-                    <tr><td>3</td><td class="col-dim">浙江世宝</td><td class="col-neg">-10.01%</td><td>汽车配件补跌</td></tr>
-                    <tr><td>4</td><td class="col-dim">永太科技</td><td class="col-neg">-9.99%</td><td>锂电+芯片双杀</td></tr>
-                    <tr><td>5</td><td class="col-dim">九鼎投资</td><td class="col-neg">-10.00%</td><td><span class="tag tag-red">2 连跌停</span></td></tr>
-                </tbody>
-            </table>
-
-            <div class="alert-panel">
-                <div class="alert-head">核按钮预警</div>
-                <p>九鼎投资 2 连跌停、东珠生态 2 连跌停——高位股走"A 字杀"。如果明天出现 3 连跌停，确认进入全面退潮期。<br>芯片方向跌停 5 只，说明芯片退潮正在扩散到首板。<br><strong>明天早上 30 分钟不要追高</strong>，等恐慌释放完。</p>
-            </div>
-        </div>
-
-        <!-- ──── 五、明日预案 ──── -->
-        <div class="card">
-            <div class="card-head">
-                <div class="card-label"><span class="step-num">5</span> 明日预案</div>
-                <span class="tag tag-blue">偏防守</span>
-            </div>
-
-            <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1.25rem;">
-                <strong style="color:var(--text-primary)">总体策略：</strong>偏防守，仓位 <span style="color:var(--amber-bright)">3-5 成</span>
-            </p>
-
-            <table class="tbl" style="margin-bottom:1.5rem;">
-                <thead><tr><th>维度</th><th>建议</th></tr></thead>
-                <tbody>
-                    <tr><td class="col-dim">进攻/防守</td><td>防守为主</td></tr>
-                    <tr><td class="col-dim">操作模式</td><td>首板 > 低吸 > 观望 > 接力</td></tr>
-                    <tr><td class="col-dim">高标接力</td><td class="col-neg">不做 — 5板水发燃气在退潮氛围下打 5进6 = 接飞刀</td></tr>
-                    <tr><td class="col-dim">2进3</td><td class="col-warn">仅飞马国际（一季报增长线）换手最强板</td></tr>
-                    <tr><td class="col-dim">1进2</td><td class="col-pos">首选 — 聚焦一季报增长方向（宏英智能、恒工精密等）</td></tr>
-                </tbody>
-            </table>
-
-            <table class="tbl">
-                <thead><tr><th>方向</th><th>核心标的</th><th>触发条件</th></tr></thead>
-                <tbody>
-                    <tr><td class="col-pos">一季报增长 (首选)</td><td class="col-dim">飞马国际 (2板)</td><td>换手 2进3，封单 > 5000万</td></tr>
-                    <tr><td class="col-pos">一季报增长 (首板)</td><td class="col-dim">宏英智能 (1板)</td><td>1进2 竞价，高开 3-5% + 量比 > 10</td></tr>
-                    <tr><td class="col-warn">算力 (跟踪)</td><td class="col-dim">利通电子 (1板)</td><td>最强首板封单，观察开板换手</td></tr>
-                    <tr><td class="col-pos">医药/CRO (低吸)</td><td class="col-dim">药明康德 (1板)</td><td>1进2 换手板可小仓位跟随</td></tr>
-                    <tr><td class="col-pos">持仓 600152</td><td class="col-dim">维科技术 (3板)</td><td>观察 15.20 支撑，冲高 16.50+ 滞涨则卖半</td></tr>
-                </tbody>
-            </table>
-
-            <div class="alert-panel">
-                <div class="alert-head">回避方向</div>
-                <ul>
-                    <li>芯片中高位 — 主力 <strong>-162 亿</strong> 出逃，补跌第一波还没结束</li>
-                    <li>锂电跟风 — 板块已无板块效应</li>
-                    <li>高位反包板 — 金螳螂等明天大概率低开</li>
-                    <li>炸板烂板票 — 德才股份炸 16 次，明天核按钮预期</li>
-                    <li>高价股 (>20元) — 罗曼股份 156 元，不符合低价策略</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- ──── 军师总结 ──── -->
-        <div class="conclusion-panel">
-            <div class="card-label" style="margin-bottom:1rem;">
-                <span class="step-num" style="border-color:var(--cyan-bright);color:var(--cyan-bright);background:rgba(57,210,192,0.08);">Σ</span>
-                军师总结
-            </div>
-            <p>今天市场在<strong>旧的废墟上建新的房子</strong>。芯片的断壁残垣还在冒烟，但一季报增长的钢筋骨架已经立起来了。明天核心看一件事：<strong>资金是继续砸盘出逃，还是会回流业绩线做持续行情</strong>。防守为主，只吃确定性，不赌小概率。</p>
         </div>
 
     </div>
 
+    <!-- ═══ DRAWER OVERLAY ═══ -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+    <!-- ═══ DRAWER SIDE PANEL ═══ -->
+    <div class="drawer" id="drawer">
+        <div class="drawer-header">
+            <span class="drawer-title" id="drawerTitle">标的深度分析</span>
+            <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+        </div>
+        <div class="drawer-body" id="drawerBody">
+            <!-- Filled dynamically -->
+        </div>
+    </div>
+
+    <!-- ═══ TOAST CONTAINER ═══ -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <!-- ═══ SCRIPTS ═══ -->
     <script>
-        /* ── Clock ── */
+        /* ═══════════════════════════════════════════
+           INTERACTIVE TERMINAL ENGINE v2.1
+           ═══════════════════════════════════════════ */
+
+        // ── Global State ──
+        let appData = null;
+
+        // ── Clock ──
         function updateClock() {
             const now = new Date();
             const h = String(now.getHours()).padStart(2, '0');
             const m = String(now.getMinutes()).padStart(2, '0');
             const s = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+            const el = document.getElementById('clock');
+            if (el) el.textContent = h + ':' + m + ':' + s;
         }
         updateClock();
         setInterval(updateClock, 1000);
 
-        /* ── Collapsible Card ── */
-        function toggleCard(id) {
-            const el = document.getElementById(id);
-            el.classList.toggle('collapsed');
+        // ══════════════════
+        //  TAB SWITCHING
+        // ══════════════════
+        function switchTab(tabId) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(function(btn) {
+                btn.classList.toggle('active', btn.dataset.tab === tabId);
+            });
+
+            // Hide all panels with transition
+            document.querySelectorAll('.tab-panel').forEach(function(panel) {
+                panel.classList.remove('visible');
+                // Wait for fade-out, then hide
+                setTimeout(function() {
+                    if (!panel.classList.contains('visible')) {
+                        panel.classList.remove('active');
+                    }
+                }, 300);
+            });
+
+            // Show target panel
+            var target = document.getElementById('panel-' + tabId);
+            if (target) {
+                target.classList.add('active');
+                // Trigger reflow for transition
+                void target.offsetHeight;
+                requestAnimationFrame(function() {
+                    target.classList.add('visible');
+                });
+            }
         }
 
-        /* ── Table Row Click-Highlight ── */
-        document.addEventListener('DOMContentLoaded', function() {
+        // ══════════════════
+        //  COLLAPSIBLE CARD
+        // ══════════════════
+        function toggleCard(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.toggle('collapsed');
+        }
+
+        // ══════════════════
+        //  TABLE ROW HIGHLIGHT
+        // ══════════════════
+        function initTableHighlight() {
             document.querySelectorAll('.tbl tbody').forEach(function(tbody) {
                 tbody.addEventListener('click', function(e) {
-                    const row = e.target.closest('tr');
+                    // Don't toggle if clicking a stock code link
+                    if (e.target.classList.contains('stock-code')) return;
+                    var row = e.target.closest('tr');
                     if (!row) return;
-                    // Toggle: if already selected, deselect; otherwise select
                     if (row.classList.contains('row-selected')) {
                         row.classList.remove('row-selected');
                     } else {
-                        // Deselect siblings first (single-select mode)
                         tbody.querySelectorAll('tr.row-selected').forEach(function(r) {
                             r.classList.remove('row-selected');
                         });
@@ -941,6 +1275,376 @@
                     }
                 });
             });
+        }
+
+        // ══════════════════
+        //  DRAWER
+        // ══════════════════
+        function openDrawer(code) {
+            var data = (appData && appData.deepAnalysis) ? appData.deepAnalysis[code] : null;
+            if (!data) {
+                showToast('未找到 ' + code + ' 的深度数据', 'error');
+                return;
+            }
+
+            document.getElementById('drawerTitle').textContent = data.code + ' ' + data.name + ' · 深度分析';
+
+            var html = '';
+            // Basic Info
+            html += '<div class="drawer-section">';
+            html += '<div class="drawer-section-title">基本信息</div>';
+            html += '<div class="drawer-kv"><span class="dk-label">标的代码</span><span class="dk-value">' + data.code + '</span></div>';
+            html += '<div class="drawer-kv"><span class="dk-label">标的名称</span><span class="dk-value">' + data.name + '</span></div>';
+            html += '<div class="drawer-kv"><span class="dk-label">所属板块</span><span class="dk-value">' + data.sector + '</span></div>';
+            html += '<div class="drawer-kv"><span class="dk-label">最新价</span><span class="dk-value">' + data.price + '</span></div>';
+            html += '<div class="drawer-kv"><span class="dk-label">涨跌幅</span><span class="dk-value ' + (data.change.startsWith('+') ? 'pos' : 'neg') + '">' + data.change + '</span></div>';
+            html += '<div class="drawer-kv"><span class="dk-label">连板</span><span class="dk-value">' + data.board + '</span></div>';
+            html += '<div class="drawer-kv"><span class="dk-label">成交额</span><span class="dk-value">' + data.volume + '</span></div>';
+            html += '<div class="drawer-kv"><span class="dk-label">换手率</span><span class="dk-value">' + data.turnover + '</span></div>';
+            html += '</div>';
+
+            // Logic
+            html += '<div class="drawer-section">';
+            html += '<div class="drawer-section-title"><span class="drawer-tag drawer-tag-logic">逻辑</span></div>';
+            html += '<p class="drawer-text">' + data.logic + '</p>';
+            html += '</div>';
+
+            // Risk
+            html += '<div class="drawer-section">';
+            html += '<div class="drawer-section-title"><span class="drawer-tag drawer-tag-risk">风险</span></div>';
+            html += '<p class="drawer-text">' + data.risk + '</p>';
+            html += '</div>';
+
+            // Action
+            html += '<div class="drawer-section">';
+            html += '<div class="drawer-section-title"><span class="drawer-tag drawer-tag-action">操作建议</span></div>';
+            html += '<p class="drawer-text">' + data.action + '</p>';
+            html += '</div>';
+
+            document.getElementById('drawerBody').innerHTML = html;
+            document.getElementById('drawer').classList.add('open');
+            document.getElementById('drawerOverlay').classList.add('open');
+        }
+
+        function closeDrawer() {
+            document.getElementById('drawer').classList.remove('open');
+            document.getElementById('drawerOverlay').classList.remove('open');
+        }
+
+        // Close drawer with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeDrawer();
+        });
+
+        // ══════════════════
+        //  TOAST NOTIFICATIONS
+        // ══════════════════
+        function showToast(message, type) {
+            type = type || 'info';
+            var container = document.getElementById('toastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+
+            var icons = { success: '\u2713', error: '\u2717', info: '\u2139' };
+            toast.innerHTML = '<span class="toast-icon">' + (icons[type] || icons.info) + '</span>' + message;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(function() {
+                toast.classList.add('show');
+            });
+
+            setTimeout(function() {
+                toast.classList.remove('show');
+                setTimeout(function() {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // ══════════════════
+        //  NUMBER FLASH EFFECT
+        // ══════════════════
+        function flashElement(el) {
+            if (!el) return;
+            el.classList.remove('flash');
+            void el.offsetHeight;
+            el.classList.add('flash');
+            setTimeout(function() {
+                el.classList.remove('flash');
+            }, 600);
+        }
+
+        // ══════════════════
+        //  RENDER FUNCTIONS
+        // ══════════════════
+
+        function renderIndices(data) {
+            var grid = document.getElementById('indices-grid');
+            if (!grid || !data) return;
+            grid.innerHTML = '';
+            data.forEach(function(item) {
+                var cell = document.createElement('div');
+                cell.className = 'metric-cell';
+                var typeClass = 'm-neu';
+                if (item.type === 'neg') typeClass = 'm-neg';
+                else if (item.type === 'pos') typeClass = 'm-pos';
+
+                var valueHtml = item.value;
+                if (item.label === '成交额') {
+                    var parts = item.value.split('万亿');
+                    valueHtml = parts[0] + '<span style="font-size:0.85rem;font-weight:400;color:var(--text-muted)"> 万亿</span>';
+                }
+
+                cell.innerHTML =
+                    '<div class="m-label">' + item.label + '</div>' +
+                    '<div class="m-value ' + typeClass + '">' + valueHtml + '</div>' +
+                    '<div class="m-sub" style="color:var(--text-muted)">' + item.note + '</div>';
+                grid.appendChild(cell);
+            });
+        }
+
+        function renderSentiment(data) {
+            var tbody = document.getElementById('sentiment-tbody');
+            if (!tbody || !data) return;
+            tbody.innerHTML = '';
+            data.forEach(function(item) {
+                var tr = document.createElement('tr');
+                var conclusionHtml = item.conclusion;
+                if (item.type === 'neg') {
+                    conclusionHtml = '<span class="tag tag-red">' + item.conclusion + '</span>';
+                }
+                var dataClass = item.type === 'neg' ? ' class="col-neg"' : '';
+                tr.innerHTML =
+                    '<td class="col-dim">' + item.dim + '</td>' +
+                    '<td' + dataClass + '>' + item.data + '</td>' +
+                    '<td>' + conclusionHtml + '</td>';
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderMainlines(data) {
+            var container = document.getElementById('mainlines-container');
+            if (!container || !data) return;
+            container.innerHTML = '';
+            data.forEach(function(item) {
+                var div = document.createElement('div');
+                var cls = 'track-item';
+                if (item.indicator === 'red') cls += ' retreat';
+                if (item.indicator === 'amber') cls += ' rotating';
+                div.className = cls;
+
+                div.innerHTML =
+                    '<div class="track-head">' +
+                        '<div class="track-indicator ' + item.indicator + '"></div>' +
+                        '<span class="track-title">' + item.title + '</span>' +
+                        '<span class="tag tag-' + item.statusType + '">' + item.status + '</span>' +
+                    '</div>' +
+                    '<div class="track-body">' + item.body + '</div>';
+                container.appendChild(div);
+            });
+        }
+
+        function renderTopTier(data) {
+            var container = document.getElementById('top-tier-container');
+            if (!container || !data) return;
+            container.innerHTML = '';
+            data.forEach(function(item) {
+                var div = document.createElement('div');
+                div.className = 'tier-row';
+                div.innerHTML =
+                    '<div class="tier-num tier-' + item.tier + '">' + item.rank + '</div>' +
+                    '<div class="tier-info">' +
+                        '<div class="tier-name"><span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.code + '</span> ' + item.name + '</div>' +
+                        '<div class="tier-desc">' + item.desc + '</div>' +
+                    '</div>' +
+                    '<div class="tier-chip">' + item.chip + '</div>';
+                container.appendChild(div);
+            });
+        }
+
+        function renderLossDetector(data) {
+            var tbody = document.getElementById('loss-tbody');
+            if (!tbody || !data) return;
+            tbody.innerHTML = '';
+            data.rows.forEach(function(item) {
+                var tr = document.createElement('tr');
+                var featureHtml = item.feature;
+                if (item.tag) {
+                    featureHtml = '<span class="tag tag-red">' + item.tag + '</span> ' + item.feature.replace(item.tag + ' ', '');
+                }
+                tr.innerHTML =
+                    '<td>' + item.id + '</td>' +
+                    '<td class="col-dim">' + item.name + '</td>' +
+                    '<td class="col-neg">' + item.change + '</td>' +
+                    '<td>' + featureHtml + '</td>';
+                tbody.appendChild(tr);
+            });
+
+            var alertEl = document.getElementById('loss-alert');
+            if (alertEl && data.alert) alertEl.innerHTML = data.alert;
+        }
+
+        function renderLogicCheck(data) {
+            if (!data) return;
+
+            // Error recall
+            var errEl = document.getElementById('error-recall-text');
+            if (errEl) errEl.innerHTML = data.errorRecall;
+
+            // Logic table
+            var tbody = document.getElementById('logic-tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                data.logicRows.forEach(function(item) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML =
+                        '<td class="col-dim">' + item.dim + '</td>' +
+                        '<td>' + item.yesterday + '</td>' +
+                        '<td>' + item.today + '</td>' +
+                        '<td><span class="tag tag-' + item.diffType + '">' + item.diff + '</span></td>';
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Correction
+            var corrEl = document.getElementById('correction-text');
+            if (corrEl) corrEl.innerHTML = data.correction;
+        }
+
+        function renderTradePlan(data) {
+            if (!data) return;
+
+            // Strategy
+            var stratEl = document.getElementById('plan-strategy');
+            if (stratEl) stratEl.innerHTML = data.strategy;
+
+            // Guide table
+            var guideTbody = document.getElementById('plan-guide-tbody');
+            if (guideTbody) {
+                guideTbody.innerHTML = '';
+                data.guideRows.forEach(function(item) {
+                    var tr = document.createElement('tr');
+                    var suggestClass = '';
+                    if (item.type === 'neg') suggestClass = ' class="col-neg"';
+                    else if (item.type === 'warn') suggestClass = ' class="col-warn"';
+                    else if (item.type === 'pos') suggestClass = ' class="col-pos"';
+                    tr.innerHTML =
+                        '<td class="col-dim">' + item.dim + '</td>' +
+                        '<td' + suggestClass + '>' + item.suggest + '</td>';
+                    guideTbody.appendChild(tr);
+                });
+            }
+
+            // Action table
+            var actTbody = document.getElementById('plan-action-tbody');
+            if (actTbody) {
+                actTbody.innerHTML = '';
+                data.actionRows.forEach(function(item) {
+                    var tr = document.createElement('tr');
+                    var dirClass = item.dirType === 'pos' ? 'col-pos' : (item.dirType === 'warn' ? 'col-warn' : '');
+                    var targetHtml = item.target;
+                    if (item.code && item.code !== '--') {
+                        targetHtml = '<span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.target + '</span>';
+                    }
+                    tr.innerHTML =
+                        '<td class="' + dirClass + '">' + item.direction + '</td>' +
+                        '<td class="col-dim">' + targetHtml + '</td>' +
+                        '<td>' + item.trigger + '</td>';
+                    actTbody.appendChild(tr);
+                });
+            }
+
+            // Avoid list
+            var avoidList = document.getElementById('avoid-list');
+            if (avoidList) {
+                avoidList.innerHTML = '';
+                data.avoidList.forEach(function(item) {
+                    var li = document.createElement('li');
+                    li.innerHTML = item;
+                    avoidList.appendChild(li);
+                });
+            }
+
+            // Conclusion
+            var conEl = document.getElementById('conclusion-text');
+            if (conEl) conEl.innerHTML = data.conclusion;
+        }
+
+        // ══════════════════
+        //  FULL RENDER
+        // ══════════════════
+        function renderAll(data) {
+            if (!data) return;
+
+            // Date
+            var dateEl = document.getElementById('review-date');
+            if (dateEl && data.meta) {
+                var oldDate = dateEl.textContent;
+                dateEl.textContent = data.meta.date;
+                if (oldDate !== data.meta.date) flashElement(dateEl);
+            }
+
+            // Market Overview
+            renderIndices(data.marketOverview.indices);
+            renderSentiment(data.marketOverview.sentiment);
+            var emText = document.getElementById('emotion-text');
+            if (emText) emText.innerHTML = data.marketOverview.emotionCycle;
+            renderMainlines(data.marketOverview.mainlines);
+            renderTopTier(data.marketOverview.topTier);
+            renderLossDetector(data.marketOverview.lossDetector);
+
+            // Logic Check
+            renderLogicCheck(data.logicCheck);
+
+            // Trade Plan
+            renderTradePlan(data.tradePlan);
+
+            // Re-init table highlight
+            initTableHighlight();
+        }
+
+        // ══════════════════
+        //  FETCH DATA
+        // ══════════════════
+        function fetchData() {
+            var btn = document.getElementById('btnFetch');
+            if (!btn) return;
+
+            btn.classList.add('loading');
+            btn.textContent = 'Loading...';
+
+            fetch('./data.json')
+                .then(function(res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
+                .then(function(data) {
+                    appData = data;
+                    renderAll(data);
+                    btn.classList.remove('loading');
+                    btn.textContent = 'Fetch Data';
+                    showToast('数据加载成功', 'success');
+
+                    // Flash all metric values
+                    document.querySelectorAll('.m-value').forEach(flashElement);
+                })
+                .catch(function(err) {
+                    btn.classList.remove('loading');
+                    btn.textContent = 'Fetch Data';
+                    showToast('加载失败: ' + err.message, 'error');
+                    console.error('Fetch error:', err);
+                });
+        }
+
+        // ══════════════════
+        //  INIT ON DOM READY
+        // ══════════════════
+        document.addEventListener('DOMContentLoaded', function() {
+            initTableHighlight();
+
+            // Auto-fetch data on page load
+            fetchData();
         });
     </script>
 </body>

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpha-Q 2.0 · 交易复盘系统</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2332;
+            --border-color: #2a3548;
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .logo-text h1 {
+            font-size: 1.25rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .date-header {
+            margin-bottom: 2rem;
+        }
+
+        .date-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .date-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+
+        .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .badge-orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+        .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .grid { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+
+        .metric-label { color: var(--text-secondary); font-size: 0.875rem; }
+        .metric-change { font-size: 0.75rem; margin-top: 0.25rem; }
+        .metric-change.positive { color: var(--accent-green); }
+        .metric-change.negative { color: var(--accent-red); }
+
+        .mainline-card {
+            border-left: 3px solid var(--accent-green);
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .mainline-card.retreat { border-left-color: var(--accent-red); }
+        .mainline-card.rotating { border-left-color: var(--accent-orange); }
+
+        .mainline-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .mainline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .mainline-dot.red { background: var(--accent-red); }
+        .mainline-dot.orange { background: var(--accent-orange); }
+
+        .rank-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+
+        .rank-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .rank-1 { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #000; }
+        .rank-2 { background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: #fff; }
+        .rank-3 { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #fff; }
+
+        .rank-info { flex: 1; }
+        .rank-stock { font-weight: 600; margin-bottom: 0.25rem; }
+        .rank-detail { font-size: 0.75rem; color: var(--text-secondary); }
+        .rank-tag {
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-card);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--accent-blue);
+        }
+
+        .alert-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .alert-title {
+            color: var(--accent-red);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 1024px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .grid-4 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">α</div>
+                <div class="logo-text">
+                    <h1>Alpha-Q 2.0</h1>
+                    <p>交易复盘系统 · SOP验证版</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="date-header">
+            <h2>📅 扫地僧逻辑深度复盘 · 2026-04-28</h2>
+            <p class="subtitle">新SOP验证版 | 包含逻辑对账、地位属性、亏钱探测、错题召回四大机制</p>
+        </div>
+
+        <!-- 步骤0: 历史错题召回 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📋 步骤 0: 历史错题召回</div>
+                <span class="badge badge-orange">修正规则</span>
+            </div>
+            <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                <strong>错题本检索：</strong>检索到 2026-04-28 维科技术弱转强误判记录。今日市场情况：与 4/28 不同，当下芯片主力净流出 -162 亿，跌停 30 家，属于板块级退潮而非横盘整理。因此 <strong>4/28 "竞价弱≠放弃"的修正规则不完全适用</strong>——板块退潮远比个股分歧危险。
+            </p>
+        </div>
+
+        <!-- 一、逻辑对账 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">一、逻辑对账（昨日预期 vs 今日实盘）</div>
+                <span class="badge badge-blue">核心模块</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>维度</th><th>昨日预期（4/27 收盘）</th><th>今日实盘（4/28）</th><th>预期差</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>芯片/半导体</strong></td>
+                        <td>高潮延续，强者恒强</td>
+                        <td>✅ 部分冲高但主力净流出 <strong>-162 亿</strong>（退潮）</td>
+                        <td><span class="badge badge-red">低于预期</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>一季报增长</strong></td>
+                        <td>暗线轮动</td>
+                        <td>✅ 强度 <strong>17455</strong> 断层第一，涨停 13 只，净流入 <strong>+48.75 亿</strong></td>
+                        <td><span class="badge badge-green">超预期 ✅</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>锂电</strong></td>
+                        <td>分歧后仍有修复机会</td>
+                        <td>❌ 多氟多 -2.14%、融捷 -0.85%，仅维科技术穿越</td>
+                        <td><span class="badge badge-red">低于预期</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>600152 维科技术</strong></td>
+                        <td>竞价弱转强，日内穿越</td>
+                        <td>✅ 开盘 14.55（+2%）→ 回踩 14.26 不破 → 拉升封死 15.69（+10%）</td>
+                        <td><span class="badge badge-green">符合预期</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 二、市场定调 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">二、市场定调</div>
+            </div>
+            <div class="grid grid-4">
+                <div class="metric-card">
+                    <div class="metric-label">上证指数</div>
+                    <div class="metric-value" style="color: var(--accent-red);">-0.19%</div>
+                    <div class="metric-change negative">权重护盘</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">深证成指</div>
+                    <div class="metric-value" style="color: var(--accent-red);">-1.10%</div>
+                    <div class="metric-change negative">指数分化</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">创业板指</div>
+                    <div class="metric-value" style="color: var(--accent-red);">-1.43%</div>
+                    <div class="metric-change negative">成长承压</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">成交额</div>
+                    <div class="metric-value">2.536 万亿</div>
+                    <div class="metric-change negative">缩量 600 亿</div>
+                </div>
+            </div>
+
+            <table>
+                <thead><tr><th>维度</th><th>数据</th><th>结论</th></tr></thead>
+                <tbody>
+                    <tr><td>涨跌比</td><td>~2017 : ~4499（约 1:2.25）</td><td>普跌格局，亏钱效应扩散</td></tr>
+                    <tr><td>涨停</td><td>59 家（昨日 77 家）</td><td>情绪降温</td></tr>
+                    <tr><td>跌停</td><td><strong style="color: var(--accent-red);">30 家</strong>（昨日个位数）</td><td><span class="badge badge-red">🔴 大幅增长</span></td></tr>
+                    <tr><td>连板高度</td><td>5 板（水发燃气 7天6板）</td><td>高度维持但边缘化</td></tr>
+                    <tr><td>晋级率（2进3）</td><td>16.67%（昨 6 只仅晋级 1 只）</td><td>接力意愿极弱</td></tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.875rem;">
+                <strong>情绪周期判定：</strong><span class="badge badge-orange">混沌轮动期（分歧→切换过渡段）</span><br><br>
+                不是冰点（涨停仍有 59 家），也不是退潮（一季报增长净流入 48 亿），而是<strong>旧主线（芯片）资金出逃 → 新主线（业绩线）建仓的通道</strong>。过渡段最容易出现"早盘追高→尾盘吃面"的坑，<strong>交易难度极高</strong>。
+            </div>
+        </div>
+
+        <!-- 三、主线方向 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">三、主线方向与地位属性定性</div>
+            </div>
+            
+            <div class="mainline-card">
+                <div class="mainline-header">
+                    <div class="mainline-dot"></div>
+                    <h3>主线一：一季报增长（强化确认）</h3>
+                    <span class="badge badge-green">新主线确立</span>
+                </div>
+                <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                    不是任何股的补涨。它本身是 <strong>4/27 暗线→4/28 明牌</strong>的独立主线。板块强度 <strong>17455</strong>（断层第一）、主力净流入 <strong>+48.75 亿</strong>（全市场最大）。机构在买，板块梯队完整，<strong>已确立为新主线</strong>。
+                </p>
+            </div>
+
+            <div class="mainline-card retreat">
+                <div class="mainline-header">
+                    <div class="mainline-dot red"></div>
+                    <h3>主线二：芯片/半导体（退潮确认）</h3>
+                    <span class="badge badge-red">退潮中</span>
+                </div>
+                <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                    格林达（2板）是北方华创、中芯国际的回流补涨，但谁也带不动。午盘芯片板块依然净流出 -162 亿，这是典型的<strong>"假涨停、真出货"</strong>。中高位芯片股明天大概率继续补跌，<strong>回避</strong>。
+                </p>
+            </div>
+
+            <div class="mainline-card rotating">
+                <div class="mainline-header">
+                    <div class="mainline-dot orange"></div>
+                    <h3>次线：医药/CRO（轮动启动）</h3>
+                    <span class="badge badge-orange">观察中</span>
+                </div>
+                <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                    CRO 是独立逻辑（药明康德一季报大增 + 机构回补）。药明康德（千亿首板封 8.4 亿）带方向，但凯莱英炸板说明跟风还没跟上。<strong>跟踪，不先手</strong>。
+                </p>
+            </div>
+        </div>
+
+        <!-- 第一梯队 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">第一梯队：最高辨识度核心</div>
+            </div>
+            <div class="rank-item">
+                <div class="rank-badge rank-1">🥇</div>
+                <div class="rank-info">
+                    <div class="rank-stock">603318 水发燃气</div>
+                    <div class="rank-detail">5板/7天6板 · 市场最高板</div>
+                </div>
+                <div class="rank-tag">燃气轮机+芯片+氦气</div>
+            </div>
+            <div class="rank-item">
+                <div class="rank-badge rank-2"></div>
+                <div class="rank-info">
+                    <div class="rank-stock">600152 维科技术</div>
+                    <div class="rank-detail">3板/12天6板 · 锂电穿越龙</div>
+                </div>
+                <div class="rank-tag">封成比 0.09（全市场最优）</div>
+            </div>
+            <div class="rank-item">
+                <div class="rank-badge rank-3"></div>
+                <div class="rank-info">
+                    <div class="rank-stock">002210 飞马国际</div>
+                    <div class="rank-detail">2板 · 新主线 1进2 先锋</div>
+                </div>
+                <div class="rank-tag">一季报增长 +1610%</div>
+            </div>
+        </div>
+
+        <!-- 四、亏钱效应探测 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">四、亏钱效应探测</div>
+                <span class="badge badge-red">核按钮监控</span>
+            </div>
+            
+            <h4 style="margin-bottom: 1rem;">今日跌幅榜 Top5:</h4>
+            <table>
+                <thead><tr><th>排名</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
+                <tbody>
+                    <tr><td>1</td><td>中坚科技</td><td>-10.00%</td><td>首板跌停，无流动性</td></tr>
+                    <tr><td>2</td><td>华胜天成</td><td>-10.00%</td><td><span class="badge badge-red">芯片方向，昨日资金出逃</span></td></tr>
+                    <tr><td>3</td><td>浙江世宝</td><td>-10.01%</td><td>汽车配件补跌</td></tr>
+                    <tr><td>4</td><td>永太科技</td><td>-9.99%</td><td>锂电+芯片双杀</td></tr>
+                    <tr><td>5</td><td>九鼎投资</td><td>-10.00%</td><td><span class="badge badge-red">2 连跌停</span></td></tr>
+                </tbody>
+            </table>
+
+            <div class="alert-box">
+                <div class="alert-title">⚠ 核按钮预警</div>
+                <p style="font-size: 0.875rem;">
+                    九鼎投资 2 连跌停、东珠生态 2 连跌停——高位股走"A 字杀"。如果明天出现 3 连跌停，确认进入全面退潮期。<br>
+                    芯片方向跌停 5 只，说明芯片退潮正在扩散到首板。<br>
+                    <strong>明天早上 30 分钟不要追高</strong>，等恐慌释放完。
+                </p>
+            </div>
+        </div>
+
+        <!-- 五、明日预案 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">五、明日预案</div>
+                <span class="badge badge-blue">偏防守</span>
+            </div>
+            
+            <p style="margin-bottom: 1rem;"><strong>总体策略：</strong>偏防守，仓位 3-5 成</p>
+            
+            <table style="margin-bottom: 1.5rem;">
+                <thead><tr><th>维度</th><th>建议</th></tr></thead>
+                <tbody>
+                    <tr><td>进攻/防守</td><td>防守为主</td></tr>
+                    <tr><td>操作模式</td><td>首板 > 低吸 > 观望 > 接力</td></tr>
+                    <tr><td>高标接力</td><td>❌ 不做。5 板水发燃气在退潮氛围下打 5 进 6 = 接飞刀</td></tr>
+                    <tr><td>2 进 3</td><td>⚠️ 只做飞马国际（一季报增长线）换手最强板</td></tr>
+                    <tr><td>1 进 2</td><td>✅ 首选。聚焦一季报增长方向（宏英智能、恒工精密等）</td></tr>
+                </tbody>
+            </table>
+
+            <h4 style="margin-bottom: 1rem;">重点方向</h4>
+            <table>
+                <thead><tr><th>方向</th><th>核心标的</th><th>条件</th></tr></thead>
+                <tbody>
+                    <tr><td>✅ 一季报增长（首选）</td><td>飞马国际（2板）</td><td>换手 2 进 3，封单 > 5000 万</td></tr>
+                    <tr><td>✅ 一季报增长（首板）</td><td>宏英智能（1板）</td><td>观察 1 进 2 竞价，高开 3-5%+量比 > 10</td></tr>
+                    <tr><td>🟡 算力（跟踪）</td><td>利通电子（1板）</td><td>最强首板封单，观察是否开板换手</td></tr>
+                    <tr><td>✅ 医药/CRO（低吸）</td><td>药明康德（1板）</td><td>观察 1 进 2，换手板可小仓位跟随</td></tr>
+                    <tr><td>✅ 持仓 600152（持有）</td><td>维科技术（3板）</td><td>明日观察 15.20 支撑，冲高 16.50+ 滞涨则卖半</td></tr>
+                </tbody>
+            </table>
+
+            <div class="alert-box" style="margin-top: 1.5rem;">
+                <div class="alert-title">🚫 回避方向</div>
+                <ul style="font-size: 0.875rem; padding-left: 1.5rem; margin-top: 0.5rem;">
+                    <li>❌ 芯片中高位 - 主力 -162 亿出逃，补跌第一波还没结束</li>
+                    <li>❌ 锂电跟风 - 板块已无板块效应</li>
+                    <li>❌ 高位反包板 - 金螳螂等明天大概率低开</li>
+                    <li>❌ 炸板烂板票 - 德才股份炸 16 次，明天核按钮预期</li>
+                    <li> 高价股（>20 元）- 罗曼股份 156 元，不符合低价策略</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 军师总结 -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%); border-color: var(--accent-blue);">
+            <div class="card-header">
+                <div class="card-title">💡 军师总结</div>
+            </div>
+            <p style="font-size: 1rem; line-height: 1.8;">
+                今天市场在<strong>旧的废墟上建新的房子</strong>。芯片的断壁残垣还在冒烟，但一季报增长的钢筋骨架已经立起来了。明天核心看一件事：<strong>资金是继续砸盘出逃，还是会回流业绩线做持续行情</strong>。防守为主，只吃确定性，不赌小概率。
+            </p>
+        </div>
+    </div>
+</body>
+</html>
