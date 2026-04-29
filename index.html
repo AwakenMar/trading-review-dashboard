@@ -353,13 +353,18 @@
         .date-banner {
             padding-bottom: 1.25rem;
             border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: baseline;
+            gap: 1.25rem;
+            flex-wrap: wrap;
         }
 
         .date-banner h2 {
             font-size: 1.15rem;
             font-weight: 600;
             letter-spacing: 0.5px;
-            margin-bottom: 0.4rem;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .date-banner h2 span {
@@ -371,6 +376,10 @@
             font-size: 0.7rem;
             color: var(--text-muted);
             letter-spacing: 0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
         }
 
         .date-banner .meta em {
@@ -378,28 +387,104 @@
             font-style: normal;
         }
 
+        .date-banner-left {
+            flex-shrink: 0;
+        }
+
+        .date-banner-right {
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            flex-shrink: 0;
+        }
+
+        .date-nav-current {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--cyan-bright);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+            min-width: 100px;
+            text-align: center;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(57,210,192,0.06);
+            border: 1px solid rgba(57,210,192,0.15);
+        }
+
+        .date-nav-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .date-nav-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--cyan-bright);
+        }
+
+        .date-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .date-nav-today {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+        }
+
+        .date-nav-today:hover {
+            background: rgba(57,210,192,0.1);
+            color: var(--cyan-bright);
+            border-color: var(--cyan-bright);
+        }
+
+        .date-nav-today:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .viewing-history-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            margin-left: 0.5rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            background: var(--amber-bg);
+            border: 1px solid rgba(210,153,34,0.2);
+            color: var(--amber-bright);
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
         .container {
             max-width: 1400px;
             padding: 1.5rem 2rem 3rem;
-        }
-
-        /* ══════════════════
-           TAB CONTENT PANELS
-           ══════════════════ */
-        .tab-panel {
-            display: none;
-            opacity: 0;
-            transform: translateY(6px);
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-        }
-
-        .tab-panel.active {
-            display: block;
-        }
-
-        .tab-panel.visible {
-            opacity: 1;
-            transform: translateY(0);
         }
 
         /* ══════════════════
@@ -476,8 +561,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 22px;
+            min-width: 26px;
             height: 22px;
+            padding: 0 4px;
             background: var(--blue-bg);
             border: 1px solid var(--blue-dim);
             border-radius: 4px;
@@ -502,8 +588,9 @@
             transition: all 0.3s ease-in-out;
         }
 
-        .tag-green  { background: var(--green-bg);  color: var(--green-bright);  border-color: rgba(63,185,80,0.2); }
-        .tag-red    { background: var(--red-bg);     color: var(--red-bright);    border-color: rgba(248,81,73,0.2); }
+        /* ── A-Share convention: 涨红跌绿 ── */
+        .tag-green  { background: var(--red-bg);     color: var(--red-bright);    border-color: rgba(248,81,73,0.2); }
+        .tag-red    { background: var(--green-bg);   color: var(--green-bright);  border-color: rgba(63,185,80,0.2); }
         .tag-amber  { background: var(--amber-bg);   color: var(--amber-bright);  border-color: rgba(210,153,34,0.2); }
         .tag-blue   { background: var(--blue-bg);    color: var(--blue-bright);   border-color: rgba(88,166,255,0.2); }
 
@@ -550,8 +637,9 @@
         .tbl tbody tr:last-child td { border-bottom: none; }
 
         .tbl .col-dim { color: var(--text-primary); font-weight: 600; }
-        .tbl .col-pos { color: var(--green-bright); font-weight: 600; }
-        .tbl .col-neg { color: var(--red-bright);   font-weight: 600; }
+        /* ── A-Share convention: 涨红跌绿 ── */
+        .tbl .col-pos { color: var(--red-bright); font-weight: 600; }
+        .tbl .col-neg { color: var(--green-bright);   font-weight: 600; }
         .tbl .col-warn { color: var(--amber-bright); font-weight: 600; }
 
         .tbl tbody tr {
@@ -629,8 +717,9 @@
             letter-spacing: 0.3px;
         }
 
-        .m-pos { color: var(--green-bright); }
-        .m-neg { color: var(--red-bright); }
+        /* ── A-Share convention: 涨红跌绿 ── */
+        .m-pos { color: var(--red-bright); }
+        .m-neg { color: var(--green-bright); }
         .m-neu { color: var(--text-primary); }
         .m-warn { color: var(--amber-bright); }
 
@@ -640,7 +729,7 @@
         .track-item {
             background: var(--bg-primary);
             border: 1px solid var(--border-subtle);
-            border-left: 3px solid var(--green-bright);
+            border-left: 3px solid var(--red-bright);
             border-radius: var(--radius-sm);
             padding: 1.25rem;
             margin-bottom: 0.75rem;
@@ -648,7 +737,7 @@
         }
 
         .track-item:hover { background: var(--bg-hover); }
-        .track-item.retreat  { border-left-color: var(--red-bright); }
+        .track-item.retreat  { border-left-color: var(--green-bright); }
         .track-item.rotating { border-left-color: var(--amber-bright); }
 
         .track-head {
@@ -1002,15 +1091,23 @@
 
         <!-- ── Left Sidebar ── -->
         <nav class="sidebar">
-            <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="市场概览">
+            <button class="sidebar-btn active" data-section="section-env" onclick="scrollToSection('section-env')" title="市场环境">
                 <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                <span class="sidebar-btn-label">概览</span>
+                <span class="sidebar-btn-label">环境</span>
             </button>
-            <button class="sidebar-btn" data-tab="logic" onclick="switchTab('logic')" title="逻辑对账">
+            <button class="sidebar-btn" data-section="section-mainline" onclick="scrollToSection('section-mainline')" title="主线判断">
                 <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3z" fill="none"/><path d="M21 21H13V13H21V21Z" fill="currentColor" opacity="0.3"/></svg>
-                <span class="sidebar-btn-label">对账</span>
+                <span class="sidebar-btn-label">主线</span>
             </button>
-            <button class="sidebar-btn" data-tab="plan" onclick="switchTab('plan')" title="交易预案">
+            <button class="sidebar-btn" data-section="section-tier" onclick="scrollToSection('section-tier')" title="核心标的">
+                <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <span class="sidebar-btn-label">标的</span>
+            </button>
+            <button class="sidebar-btn" data-section="section-negative" onclick="scrollToSection('section-negative')" title="负反馈">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="none"/><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                <span class="sidebar-btn-label">负反馈</span>
+            </button>
+            <button class="sidebar-btn" data-section="section-plan" onclick="scrollToSection('section-plan')" title="交易预案">
                 <svg viewBox="0 0 24 24"><path d="M9 5H7v2h2V5zm0 4H7v2h2V9zm0 4H7v2h2v-2zm4-8h-2v2h2V5zm0 4h-2v2h2V9zm0 4h-2v2h2v-2zm4-8h-2v2h2V5zm0 4h-2v2h2V9zm0 4h-2v2h2v-2z" fill="currentColor"/><path d="M3 19h18v2H3v-2z"/></svg>
                 <span class="sidebar-btn-label">预案</span>
             </button>
@@ -1042,82 +1139,90 @@
         <div class="main-content">
             <div class="content-header">
                 <div class="date-banner">
-                    <h2>REVIEW <span>//</span> <span id="review-date">----/--/--</span></h2>
-                    <p class="meta">逻辑深度复盘 · 桌面终端 v3.2 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <div class="date-banner-left">
+                        <h2>REVIEW <span>//</span></h2>
+                    </div>
+                    <div class="date-nav">
+                        <button class="date-nav-btn" id="btnPrevDay" onclick="switchDay(-1)" title="前一天的复盘">
+                            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
+                        </button>
+                        <span class="date-nav-current" id="review-date">----/--/--</span>
+                        <button class="date-nav-btn" id="btnNextDay" onclick="switchDay(1)" title="后一天的复盘">
+                            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
+                        </button>
+                        <button class="date-nav-today" id="btnToday" onclick="goToToday()" title="回到今天">
+                            今天
+                        </button>
+                    </div>
+                    <div class="date-banner-right">
+                        <p class="meta">逻辑深度复盘 · v3.2 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    </div>
                 </div>
             </div>
 
             <div class="container">
 
-                <!-- ═══ TAB 1: 市场概览 ═══ -->
-                <div class="tab-panel active visible" id="panel-overview">
-                    <div class="card">
-                        <div class="card-head">
-                            <div class="card-label"><span class="step-num">2</span> 市场定调</div>
-                            <span class="tag tag-amber">混沌轮动期</span>
-                        </div>
-                        <div class="metric-grid" id="indices-grid"></div>
-                        <table class="tbl">
-                            <thead><tr><th>维度</th><th>数据</th><th>结论</th></tr></thead>
-                            <tbody id="sentiment-tbody"></tbody>
-                        </table>
-                        <div class="insight-box">
-                            <div class="insight-head">情绪周期判定</div>
-                            <p id="emotion-text"></p>
-                        </div>
+                <!-- ═══ 一、市场环境 ═══ -->
+                <div class="card" id="section-env">
+                    <div class="card-head">
+                        <div class="card-label"><span class="step-num">壹</span> 市场环境 · 核心数据概览</div>
+                        <span class="tag tag-amber" id="sentiment-tag">混沌轮动期</span>
                     </div>
-
-                    <div class="card">
-                        <div class="card-head">
-                            <div class="card-label"><span class="step-num">3</span> 主线方向与地位属性定性</div>
-                        </div>
-                        <div id="mainlines-container"></div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-head">
-                            <div class="card-label"><span class="step-num">T</span> 第一梯队 · 最高辨识度核心</div>
-                        </div>
-                        <div id="top-tier-container"></div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-head">
-                            <div class="card-label"><span class="step-num">4</span> 亏钱效应探测</div>
-                            <span class="tag tag-red">核按钮监控</span>
-                        </div>
-                        <table class="tbl">
-                            <thead><tr><th>#</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
-                            <tbody id="loss-tbody"></tbody>
-                        </table>
-                        <div class="alert-panel">
-                            <div class="alert-head">核按钮预警</div>
-                            <p id="loss-alert"></p>
-                        </div>
+                    <div class="metric-grid" id="indices-grid"></div>
+                    <table class="tbl">
+                        <thead><tr><th>维度</th><th>数据</th><th>结论</th></tr></thead>
+                        <tbody id="sentiment-tbody"></tbody>
+                    </table>
+                    <div class="insight-box">
+                        <div class="insight-head">情绪定调</div>
+                        <p id="emotion-text"></p>
                     </div>
                 </div>
 
-                <!-- ═══ TAB 2: 逻辑对账 ═══ -->
-                <div class="tab-panel" id="panel-logic">
-                    <div class="card collapsible collapsed" id="step0">
-                        <div class="card-head" onclick="toggleCard('step0')">
-                            <div class="card-label"><span class="step-num">0</span> 历史错题召回</div>
-                            <span class="tag tag-amber">修正规则</span>
-                        </div>
-                        <div class="card-body">
-                            <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75;">
-                                <strong style="color:var(--text-primary)">错题本检索：</strong><span id="error-recall-text"></span>
-                            </p>
-                        </div>
+                <!-- ═══ 二、板块强度与主线判断 ═══ -->
+                <div class="card" id="section-mainline">
+                    <div class="card-head">
+                        <div class="card-label"><span class="step-num">贰</span> 板块强度与主线判断</div>
                     </div>
+                    <div id="mainlines-container"></div>
+                </div>
 
-                    <div class="card">
-                        <div class="card-head">
-                            <div class="card-label"><span class="step-num">1</span> 逻辑对账 · 昨日预期 vs 今日实盘</div>
-                            <span class="tag tag-blue">CORE</span>
-                        </div>
-                        <table class="tbl">
-                            <thead><tr><th>维度</th><th>昨日预期 (4/27)</th><th>今日实盘 (4/28)</th><th>预期差</th></tr></thead>
+                <!-- ═══ 三、核心地位标的定性 ═══ -->
+                <div class="card" id="section-tier">
+                    <div class="card-head">
+                        <div class="card-label"><span class="step-num">叁</span> 核心地位标的定性 · 最高辨识度</div>
+                    </div>
+                    <div id="top-tier-container"></div>
+                </div>
+
+                <!-- ═══ 四、负反馈预判 ═══ -->
+                <div class="card" id="section-negative">
+                    <div class="card-head">
+                        <div class="card-label"><span class="step-num">肆</span> 负反馈预判 · 明天最容易出现的坑</div>
+                        <span class="tag tag-red">核按钮监控</span>
+                    </div>
+                    <table class="tbl">
+                        <thead><tr><th>#</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
+                        <tbody id="loss-tbody"></tbody>
+                    </table>
+                    <div class="alert-panel">
+                        <div class="alert-head">负反馈预警</div>
+                        <p id="loss-alert"></p>
+                    </div>
+                </div>
+
+                <!-- ═══ 五、逻辑对账 ═══ -->
+                <div class="card collapsible collapsed" id="section-logic">
+                    <div class="card-head" onclick="toggleCard('section-logic')">
+                        <div class="card-label"><span class="step-num">伍</span> 逻辑对账 · 错题召回 + 预期 vs 实盘</div>
+                        <span class="tag tag-amber">点击展开</span>
+                    </div>
+                    <div class="card-body">
+                        <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75; margin-bottom:1rem;">
+                            <strong style="color:var(--text-primary)">错题本检索：</strong><span id="error-recall-text"></span>
+                        </p>
+                        <table class="tbl" style="margin-bottom:1rem;">
+                            <thead><tr><th>维度</th><th>昨日预期</th><th>今日实盘</th><th>预期差</th></tr></thead>
                             <tbody id="logic-tbody"></tbody>
                         </table>
                         <div class="insight-box">
@@ -1127,37 +1232,36 @@
                     </div>
                 </div>
 
-                <!-- ═══ TAB 3: 交易预案 ═══ -->
-                <div class="tab-panel" id="panel-plan">
-                    <div class="card">
-                        <div class="card-head">
-                            <div class="card-label"><span class="step-num">5</span> 明日预案</div>
-                            <span class="tag tag-blue">偏防守</span>
-                        </div>
-                        <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1.25rem;">
-                            <strong style="color:var(--text-primary)">总体策略：</strong><span id="plan-strategy"></span>
-                        </p>
-                        <table class="tbl" style="margin-bottom:1.5rem;">
-                            <thead><tr><th>维度</th><th>建议</th></tr></thead>
-                            <tbody id="plan-guide-tbody"></tbody>
-                        </table>
-                        <table class="tbl">
-                            <thead><tr><th>方向</th><th>核心标的</th><th>触发条件</th></tr></thead>
-                            <tbody id="plan-action-tbody"></tbody>
-                        </table>
-                        <div class="alert-panel">
-                            <div class="alert-head">回避方向</div>
-                            <ul id="avoid-list"></ul>
-                        </div>
+                <!-- ═══ 六、明日交易预案 ═══ -->
+                <div class="card" id="section-plan">
+                    <div class="card-head">
+                        <div class="card-label"><span class="step-num">陆</span> 明日交易预案</div>
+                        <span class="tag tag-blue" id="plan-tag">偏防守</span>
                     </div>
+                    <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1.25rem;">
+                        <strong style="color:var(--text-primary)">总体定调：</strong><span id="plan-strategy"></span>
+                    </p>
+                    <table class="tbl" style="margin-bottom:1.5rem;">
+                        <thead><tr><th>维度</th><th>建议</th></tr></thead>
+                        <tbody id="plan-guide-tbody"></tbody>
+                    </table>
+                    <table class="tbl">
+                        <thead><tr><th>方向</th><th>核心标的</th><th>触发条件</th></tr></thead>
+                        <tbody id="plan-action-tbody"></tbody>
+                    </table>
+                    <div class="alert-panel">
+                        <div class="alert-head">回避方向</div>
+                        <ul id="avoid-list"></ul>
+                    </div>
+                </div>
 
-                    <div class="conclusion-panel">
-                        <div class="card-label" style="margin-bottom:1rem;">
-                            <span class="step-num" style="border-color:var(--cyan-bright);color:var(--cyan-bright);background:rgba(57,210,192,0.08);">&Sigma;</span>
-                            军师总结
-                        </div>
-                        <p id="conclusion-text"></p>
+                <!-- ═══ 军师总结 ═══ -->
+                <div class="conclusion-panel">
+                    <div class="card-label" style="margin-bottom:1rem;">
+                        <span class="step-num" style="border-color:var(--cyan-bright);color:var(--cyan-bright);background:rgba(57,210,192,0.08);">&Sigma;</span>
+                        军师总结
                     </div>
+                    <p id="conclusion-text"></p>
                 </div>
 
             </div>
@@ -1246,11 +1350,13 @@
                 document.querySelectorAll('.m-value').forEach(flashElement);
                 showToast('数据已自动更新', 'success');
                 updateFileStatus('watching', 'AUTO');
+                refreshAvailableDates();
             });
 
             // Listen for API push events
             window.electronAPI.onApiPushReceived(function (info) {
                 showToast('API 推送: ' + info.date + ' 复盘数据已接收', 'success');
+                refreshAvailableDates();
             });
 
             // Show file status
@@ -1284,30 +1390,34 @@
         }
 
         // ══════════════════
-        //  TAB SWITCHING (SIDEBAR)
+        //  SECTION NAVIGATION (SIDEBAR)
         // ══════════════════
-        function switchTab(tabId) {
-            document.querySelectorAll('.sidebar-btn[data-tab]').forEach(function (btn) {
-                btn.classList.toggle('active', btn.dataset.tab === tabId);
-            });
-
-            document.querySelectorAll('.tab-panel').forEach(function (panel) {
-                panel.classList.remove('visible');
-                setTimeout(function () {
-                    if (!panel.classList.contains('visible')) {
-                        panel.classList.remove('active');
-                    }
-                }, 300);
-            });
-
-            var target = document.getElementById('panel-' + tabId);
-            if (target) {
-                target.classList.add('active');
-                void target.offsetHeight;
-                requestAnimationFrame(function () {
-                    target.classList.add('visible');
-                });
+        function scrollToSection(sectionId) {
+            var el = document.getElementById(sectionId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+            document.querySelectorAll('.sidebar-btn[data-section]').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.section === sectionId);
+            });
+        }
+
+        // Track scroll position to update active sidebar button
+        function updateActiveSectionOnScroll() {
+            var sections = ['section-env', 'section-mainline', 'section-tier', 'section-negative', 'section-plan'];
+            var scrollEl = document.querySelector('.main-content');
+            if (!scrollEl) return;
+            var scrollTop = scrollEl.scrollTop;
+            var currentSection = sections[0];
+            sections.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && el.offsetTop - scrollEl.offsetTop - 100 <= scrollTop) {
+                    currentSection = id;
+                }
+            });
+            document.querySelectorAll('.sidebar-btn[data-section]').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.section === currentSection);
+            });
         }
 
         // ══════════════════
@@ -1437,6 +1547,7 @@
                     currentViewingDate = dateStr;
                     appData = result.data;
                     renderAll(result.data);
+                    updateDateNavUI();
                     document.querySelectorAll('.m-value').forEach(flashElement);
                     // Update active state in history list
                     document.querySelectorAll('.history-item').forEach(function (item) {
@@ -1448,6 +1559,86 @@
                     showToast('加载失败: ' + result.error, 'error');
                 }
             });
+        }
+
+        // ══════════════════
+        //  DATE NAVIGATION
+        // ══════════════════
+        var availableDates = [];   // sorted oldest → newest
+
+        function refreshAvailableDates() {
+            if (!isElectron) {
+                availableDates = [];
+                return;
+            }
+            return window.electronAPI.listHistory().then(function (result) {
+                availableDates = (result.success && result.dates) ? result.dates.slice().reverse() : [];  // oldest first
+            });
+        }
+
+        function switchDay(direction) {
+            // direction: -1 = previous day, +1 = next day
+            var currentDate = currentViewingDate || (appData && appData.meta ? appData.meta.date : null);
+            if (!currentDate || availableDates.length === 0) {
+                showToast('无历史数据', 'info');
+                return;
+            }
+            var idx = availableDates.indexOf(currentDate);
+            if (idx === -1) {
+                // Current date not in history, try to find nearest
+                // Maybe it's today's unsaved data — treat as the latest
+                if (direction === -1 && availableDates.length > 0) {
+                    loadHistoryReport(availableDates[availableDates.length - 1]);
+                    return;
+                }
+                showToast('无更多历史数据', 'info');
+                return;
+            }
+            var newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= availableDates.length) {
+                if (newIdx >= availableDates.length) {
+                    // Go back to today's live data
+                    goToToday();
+                    return;
+                }
+                showToast('已经是最早的记录', 'info');
+                return;
+            }
+            loadHistoryReport(availableDates[newIdx]);
+        }
+
+        function goToToday() {
+            currentViewingDate = null;
+            fetchData();
+            updateDateNavUI();
+        }
+
+        function updateDateNavUI() {
+            var de = document.getElementById('review-date');
+            if (de && appData && appData.meta) {
+                de.textContent = appData.meta.date;
+            }
+            // Update prev/next button states
+            var currentDate = currentViewingDate || (appData && appData.meta ? appData.meta.date : null);
+            var prevBtn = document.getElementById('btnPrevDay');
+            var nextBtn = document.getElementById('btnNextDay');
+            var todayBtn = document.getElementById('btnToday');
+
+            if (availableDates.length === 0) {
+                if (prevBtn) prevBtn.disabled = true;
+                if (nextBtn) nextBtn.disabled = true;
+                if (todayBtn) todayBtn.disabled = true;
+                return;
+            }
+
+            var idx = currentDate ? availableDates.indexOf(currentDate) : -1;
+
+            // Prev: disabled if viewing earliest history date
+            if (prevBtn) prevBtn.disabled = (idx === 0) || (idx === -1 && !currentViewingDate);
+            // Next: disabled if already at latest or viewing today
+            if (nextBtn) nextBtn.disabled = (idx === availableDates.length - 1) || (idx === -1 && !currentViewingDate);
+            // Today: disabled if already viewing today
+            if (todayBtn) todayBtn.disabled = (currentViewingDate === null);
         }
 
         // ══════════════════
@@ -1734,6 +1925,7 @@
             renderLogicCheck(data.logicCheck);
             renderTradePlan(data.tradePlan);
             initTableHighlight();
+            updateDateNavUI();
         }
 
         // ══════════════════
@@ -1783,6 +1975,12 @@
         document.addEventListener('DOMContentLoaded', function () {
             initTableHighlight();
             fetchData();
+            refreshAvailableDates();
+            // Scroll-based sidebar highlight
+            var mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.addEventListener('scroll', updateActiveSectionOnScroll);
+            }
         });
     </script>
 </body>
