@@ -353,10 +353,20 @@
         .date-banner {
             padding-bottom: 1.25rem;
             border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .date-banner-top {
             display: flex;
-            align-items: baseline;
-            gap: 1.25rem;
-            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .date-banner-top {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .date-banner h2 {
@@ -376,24 +386,11 @@
             font-size: 0.7rem;
             color: var(--text-muted);
             letter-spacing: 0.3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            min-width: 0;
         }
 
         .date-banner .meta em {
             color: var(--amber-bright);
             font-style: normal;
-        }
-
-        .date-banner-left {
-            flex-shrink: 0;
-        }
-
-        .date-banner-right {
-            margin-left: auto;
-            flex-shrink: 0;
         }
 
         .date-nav {
@@ -1139,24 +1136,22 @@
         <div class="main-content">
             <div class="content-header">
                 <div class="date-banner">
-                    <div class="date-banner-left">
+                    <div class="date-banner-top">
                         <h2>REVIEW <span>//</span></h2>
+                        <div class="date-nav">
+                            <button class="date-nav-btn" id="btnPrevDay" onclick="switchDay(-1)" title="前一天的复盘">
+                                <svg viewBox="0 0 24 24" width="14" height="14"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
+                            </button>
+                            <span class="date-nav-current" id="review-date">----/--/--</span>
+                            <button class="date-nav-btn" id="btnNextDay" onclick="switchDay(1)" title="后一天的复盘">
+                                <svg viewBox="0 0 24 24" width="14" height="14"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
+                            </button>
+                            <button class="date-nav-today" id="btnToday" onclick="goToToday()" title="回到今天">
+                                今天
+                            </button>
+                        </div>
                     </div>
-                    <div class="date-nav">
-                        <button class="date-nav-btn" id="btnPrevDay" onclick="switchDay(-1)" title="前一天的复盘">
-                            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
-                        </button>
-                        <span class="date-nav-current" id="review-date">----/--/--</span>
-                        <button class="date-nav-btn" id="btnNextDay" onclick="switchDay(1)" title="后一天的复盘">
-                            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
-                        </button>
-                        <button class="date-nav-today" id="btnToday" onclick="goToToday()" title="回到今天">
-                            今天
-                        </button>
-                    </div>
-                    <div class="date-banner-right">
-                        <p class="meta">逻辑深度复盘 · v3.2 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
-                    </div>
+                    <p class="meta">逻辑深度复盘 · v3.2 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
@@ -1964,7 +1959,14 @@
                     })
                     .catch(function (err) {
                         if (btn) btn.classList.remove('loading');
-                        showToast('加载失败: ' + err.message, 'error');
+                        // In Web mode with file:// protocol, fetch will fail.
+                        // Try loading via script tag as fallback
+                        var script = document.createElement('script');
+                        script.src = './data.json';
+                        script.onerror = function () {
+                            showToast('加载失败: ' + err.message + '（请通过 npm start 运行或使用 HTTP 服务器）', 'error');
+                        };
+                        document.head.appendChild(script);
                     });
             }
         }

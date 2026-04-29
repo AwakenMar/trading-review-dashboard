@@ -163,6 +163,18 @@ function registerIpc() {
     ipcMain.handle('read-data', function () {
         try {
             var dataPath = getDataPath();
+            if (!fs.existsSync(dataPath)) {
+                // Try resources fallback
+                if (app.isPackaged) {
+                    var bundledPath = path.join(process.resourcesPath, 'data.json');
+                    if (fs.existsSync(bundledPath)) {
+                        var raw = fs.readFileSync(bundledPath, 'utf-8');
+                        return { success: true, data: JSON.parse(raw) };
+                    }
+                }
+                // Return empty template if no data.json found
+                return { success: true, data: { meta: { date: new Date().toISOString().split('T')[0], version: '3.2', mode: '交互式交易终端', title: 'Alpha-Q 3.2' }, marketOverview: { indices: [], sentiment: [], emotionCycle: '等待数据推送...', mainlines: [], topTier: [], lossDetector: { rows: [], alert: '' } }, logicCheck: { errorRecall: '', logicRows: [], correction: '' }, tradePlan: { strategy: '等待数据推送...', guideRows: [], actionRows: [], avoidList: [], conclusion: '' }, deepAnalysis: {} } };
+            }
             var raw = fs.readFileSync(dataPath, 'utf-8');
             return { success: true, data: JSON.parse(raw) };
         } catch (err) {
