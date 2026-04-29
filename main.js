@@ -25,6 +25,7 @@ var electron = require('electron');
 var app = electron.app;
 var BrowserWindow = electron.BrowserWindow;
 var ipcMain = electron.ipcMain;
+var clipboard = electron.clipboard;
 var screen = electron.screen;
 var path = require('path');
 var fs = require('fs');
@@ -38,6 +39,23 @@ function getDataPath() {
         return path.join(path.dirname(app.getPath('exe')), 'data.json');
     }
     return path.join(__dirname, 'data.json');
+}
+
+// ── Resolve history directory path ──
+function getHistoryDir() {
+    if (app.isPackaged) {
+        return path.join(path.dirname(app.getPath('exe')), 'history');
+    }
+    return path.join(__dirname, 'history');
+}
+
+// ── Ensure history directory exists ──
+function ensureHistoryDir() {
+    var dir = getHistoryDir();
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    return dir;
 }
 
 // ── Create Main Window ──
@@ -110,6 +128,64 @@ function registerIpc() {
 
     ipcMain.handle('get-data-path', function () {
         return getDataPath();
+    });
+
+    // ── History: Check if a date file already exists ──
+    ipcMain.handle('check-report-exists', function (_event, dateStr) {
+        var filePath = path.join(getHistoryDir(), dateStr + '.json');
+        return fs.existsSync(filePath);
+    });
+
+    // ── History: Save current data to ./history/YYYY-MM-DD.json ──
+    ipcMain.handle('save-report', function (_event, dateStr, data) {
+        try {
+            var dir = ensureHistoryDir();
+            var filePath = path.join(dir, dateStr + '.json');
+            fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+            return { success: true, path: filePath };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    // ── History: List all saved report dates ──
+    ipcMain.handle('list-history', function () {
+        try {
+            var dir = getHistoryDir();
+            if (!fs.existsSync(dir)) return { success: true, dates: [] };
+            var files = fs.readdirSync(dir).filter(function (f) {
+                return f.endsWith('.json');
+            }).map(function (f) {
+                return f.replace('.json', '');
+            }).sort().reverse();  // newest first
+            return { success: true, dates: files };
+        } catch (err) {
+            return { success: false, error: err.message, dates: [] };
+        }
+    });
+
+    // ── History: Load a specific date's report ──
+    ipcMain.handle('load-history', function (_event, dateStr) {
+        try {
+            var filePath = path.join(getHistoryDir(), dateStr + '.json');
+            if (!fs.existsSync(filePath)) {
+                return { success: false, error: '文件不存在' };
+            }
+            var raw = fs.readFileSync(filePath, 'utf-8');
+            return { success: true, data: JSON.parse(raw) };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    // ── Export: Copy text to system clipboard ──
+    ipcMain.handle('export-clipboard', function (_event, text) {
+        try {
+            clipboard.writeText(text, 'clipboard');
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
     });
 }
 

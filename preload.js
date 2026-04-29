@@ -21,5 +21,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('data-updated', function (_event, data) {
             callback(data);
         });
-    }
+    },
+
+    // ── History & Export ──
+    checkReportExists: function (dateStr) { return ipcRenderer.invoke('check-report-exists', dateStr); },
+    saveReport: function (dateStr, data) { return ipcRenderer.invoke('save-report', dateStr, data); },
+    listHistory: function () { return ipcRenderer.invoke('list-history'); },
+    loadHistory: function (dateStr) { return ipcRenderer.invoke('load-history', dateStr); },
+    exportClipboard: function (text) { return ipcRenderer.invoke('export-clipboard', text); }
 });

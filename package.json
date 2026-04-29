@@ -1,7 +1,7 @@
 {
   "name": "alpha-q-terminal",
-  "version": "3.0.0",
-  "description": "Alpha-Q 3.0 - 交互式交易复盘终端 (Electron Desktop)",
+  "version": "3.1.0",
+  "description": "Alpha-Q 3.1 - 交互式交易复盘终端 (Electron Desktop)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -19,7 +19,8 @@
       "preload.js",
       "index.html",
       "data.json",
-      "assets/**/*"
+      "launcher.js",
+      "Alpha-Q.bat"
     ],
     "win": {
       "target": [
@@ -29,8 +30,7 @@
             "x64"
           ]
         }
-      ],
-      "icon": "assets/icon.ico"
+      ]
     },
     "nsis": {
       "oneClick": false,
