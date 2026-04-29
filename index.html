@@ -190,11 +190,14 @@
             border-radius: var(--radius);
             padding: 1.75rem;
             margin-bottom: var(--gap);
-            transition: border-color 0.2s ease;
+            transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+            will-change: transform;
         }
 
         .card:hover {
             border-color: #3D444D;
+            transform: scale(1.02);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(88,166,255,0.06);
         }
 
         .card-head {
@@ -204,6 +207,38 @@
             margin-bottom: 1.25rem;
             padding-bottom: 0.85rem;
             border-bottom: 1px solid var(--border-subtle);
+        }
+
+        /* ── Collapsible Card ── */
+        .card.collapsible .card-head {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .card.collapsible .card-head::after {
+            content: '▾';
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-left: 0.75rem;
+            transition: transform 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .card.collapsible.collapsed .card-head::after {
+            transform: rotate(-90deg);
+        }
+
+        .card.collapsible .card-body {
+            max-height: 800px;
+            overflow: hidden;
+            opacity: 1;
+            transition: max-height 0.4s ease, opacity 0.25s ease, padding 0.3s ease;
+        }
+
+        .card.collapsible.collapsed .card-body {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
         }
 
         .card-label {
@@ -301,6 +336,25 @@
         .tbl .col-pos { color: var(--green-bright); font-weight: 600; }
         .tbl .col-neg { color: var(--red-bright);   font-weight: 600; }
         .tbl .col-warn { color: var(--amber-bright); font-weight: 600; }
+
+        /* ── Table Row Click-Highlight ── */
+        .tbl tbody tr {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .tbl tbody tr.row-selected td {
+            background: rgba(88,166,255,0.10);
+            color: var(--text-primary);
+        }
+
+        .tbl tbody tr.row-selected:hover td {
+            background: rgba(88,166,255,0.15);
+        }
+
+        .tbl tbody tr.row-selected td:first-child {
+            box-shadow: inset 3px 0 0 var(--blue-bright);
+        }
 
         /* ══════════════════
            METRIC GRID
@@ -596,14 +650,16 @@
         </div>
 
         <!-- ──── STEP 0: 错题召回 ──── -->
-        <div class="card">
-            <div class="card-head">
+        <div class="card collapsible collapsed" id="step0">
+            <div class="card-head" onclick="toggleCard('step0')">
                 <div class="card-label"><span class="step-num">0</span> 历史错题召回</div>
                 <span class="tag tag-amber">修正规则</span>
             </div>
-            <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75;">
-                <strong style="color:var(--text-primary)">错题本检索：</strong>检索到 2026-04-28 维科技术弱转强误判记录。今日市场情况：与 4/28 不同，当下芯片主力净流出 <span class="col-neg">-162 亿</span>，跌停 <span class="col-neg">30 家</span>，属于板块级退潮而非横盘整理。因此 <strong style="color:var(--amber-bright)">4/28 "竞价弱≠放弃"的修正规则不完全适用</strong>——板块退潮远比个股分歧危险。
-            </p>
+            <div class="card-body">
+                <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75;">
+                    <strong style="color:var(--text-primary)">错题本检索：</strong>检索到 2026-04-28 维科技术弱转强误判记录。今日市场情况：与 4/28 不同，当下芯片主力净流出 <span class="col-neg">-162 亿</span>，跌停 <span class="col-neg">30 家</span>，属于板块级退潮而非横盘整理。因此 <strong style="color:var(--amber-bright)">4/28 "竞价弱≠放弃"的修正规则不完全适用</strong>——板块退潮远比个股分歧危险。
+                </p>
+            </div>
         </div>
 
         <!-- ──── 一、逻辑对账 ──── -->
@@ -848,8 +904,9 @@
 
     </div>
 
-    <!-- ═══ CLOCK SCRIPT ═══ -->
+    <!-- ═══ SCRIPTS ═══ -->
     <script>
+        /* ── Clock ── */
         function updateClock() {
             const now = new Date();
             const h = String(now.getHours()).padStart(2, '0');
@@ -859,6 +916,32 @@
         }
         updateClock();
         setInterval(updateClock, 1000);
+
+        /* ── Collapsible Card ── */
+        function toggleCard(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('collapsed');
+        }
+
+        /* ── Table Row Click-Highlight ── */
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.tbl tbody').forEach(function(tbody) {
+                tbody.addEventListener('click', function(e) {
+                    const row = e.target.closest('tr');
+                    if (!row) return;
+                    // Toggle: if already selected, deselect; otherwise select
+                    if (row.classList.contains('row-selected')) {
+                        row.classList.remove('row-selected');
+                    } else {
+                        // Deselect siblings first (single-select mode)
+                        tbody.querySelectorAll('tr.row-selected').forEach(function(r) {
+                            r.classList.remove('row-selected');
+                        });
+                        row.classList.add('row-selected');
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
