@@ -1,0 +1,49 @@
+{
+  "name": "alpha-q-terminal",
+  "version": "3.0.0",
+  "description": "Alpha-Q 3.0 - 交互式交易复盘终端 (Electron Desktop)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "build:portable": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.alpha-q.terminal",
+    "productName": "Alpha-Q Terminal",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "data.json",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Alpha-Q Terminal"
+    }
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.0.0"
+  },
+  "author": "AwakenMar",
+  "license": "MIT"
+}

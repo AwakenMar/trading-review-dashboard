@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALPHA-Q 2.1 // 交互式交易终端</title>
+    <title>ALPHA-Q 3.0 // 交互式交易终端</title>
     <style>
         /* ═══════════════════════════════════════════
-           INTERACTIVE FINANCIAL TERMINAL THEME v2.1
+           INTERACTIVE FINANCIAL TERMINAL THEME v3.0
+           ELECTRON DESKTOP + WEB COMPATIBLE
            ═══════════════════════════════════════════ */
         :root {
             /* ── Core Palette ── */
@@ -42,9 +43,11 @@
             --radius:    12px;
             --radius-sm: 6px;
             --gap:       1.25rem;
-
-            /* ── Drawer ── */
             --drawer-width: 420px;
+
+            /* ── Layout ── */
+            --sidebar-width: 64px;
+            --titlebar-height: 38px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -55,7 +58,8 @@
             color: var(--text-primary);
             line-height: 1.65;
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
+            overflow: hidden;
+            height: 100vh;
         }
 
         /* ── Scrollbar ── */
@@ -65,218 +69,242 @@
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         /* ══════════════════
-           HEADER / TERMINAL BAR
+           CUSTOM TITLE BAR (ELECTRON)
            ══════════════════ */
-        .terminal-bar {
+        .titlebar {
+            height: var(--titlebar-height);
             background: var(--bg-card);
             border-bottom: 1px solid var(--border);
-            padding: 0 2rem;
-            height: 52px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            padding-left: 1rem;
+            -webkit-app-region: drag;
+            user-select: none;
+            flex-shrink: 0;
         }
 
-        .terminal-brand {
+        .titlebar-brand {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.6rem;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
         }
 
-        .terminal-logo {
-            width: 28px;
-            height: 28px;
+        .titlebar-logo {
+            width: 20px;
+            height: 20px;
             border: 1.5px solid var(--blue-bright);
-            border-radius: 4px;
+            border-radius: 3px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 0.65rem;
             font-weight: 700;
             color: var(--blue-bright);
-            letter-spacing: -0.5px;
         }
 
-        .terminal-title {
-            font-size: 0.8rem;
-            font-weight: 600;
+        .titlebar-name {
             color: var(--text-primary);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
+            font-weight: 600;
         }
 
-        .terminal-subtitle {
-            font-size: 0.65rem;
+        .titlebar-version {
             color: var(--text-muted);
-            letter-spacing: 0.5px;
-            margin-left: 0.75rem;
-            padding-left: 0.75rem;
-            border-left: 1px solid var(--border);
+            font-size: 0.6rem;
+            margin-left: 0.25rem;
         }
 
-        .terminal-status {
+        .titlebar-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            font-size: 0.7rem;
+            gap: 1rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
-            letter-spacing: 0.5px;
         }
 
-        .status-dot {
-            width: 6px;
-            height: 6px;
+        .titlebar-center .status-dot {
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background: var(--green-bright);
             display: inline-block;
-            margin-right: 0.35rem;
+            margin-right: 0.25rem;
             animation: pulse-dot 2s ease-in-out infinite;
         }
 
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        .terminal-time {
+        .titlebar-clock {
             color: var(--cyan-bright);
             font-variant-numeric: tabular-nums;
         }
 
-        .btn-fetch {
-            background: var(--blue-bg);
-            border: 1px solid rgba(88,166,255,0.25);
-            color: var(--blue-bright);
-            padding: 0.35rem 0.85rem;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: 0.65rem;
-            font-weight: 600;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
+        .titlebar-btns {
+            display: flex;
+            -webkit-app-region: no-drag;
+            height: 100%;
+        }
+
+        .titlebar-btn {
+            width: 46px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.7rem;
             cursor: pointer;
-            transition: all 0.3s ease-in-out;
+            transition: background 0.15s ease, color 0.15s ease;
         }
 
-        .btn-fetch:hover {
-            background: rgba(88,166,255,0.15);
-            border-color: var(--blue-bright);
-            box-shadow: 0 0 12px rgba(88,166,255,0.15);
+        .titlebar-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
         }
 
-        .btn-fetch:active {
-            transform: scale(0.96);
+        .titlebar-btn.btn-close:hover {
+            background: var(--red-bright);
+            color: #fff;
         }
 
-        .btn-fetch.loading {
-            opacity: 0.6;
-            pointer-events: none;
+        .titlebar-btn svg {
+            width: 10px;
+            height: 10px;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            fill: none;
         }
 
         /* ══════════════════
-           TAB NAVIGATION
+           APP LAYOUT: SIDEBAR + CONTENT
            ══════════════════ */
-        .tab-nav {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 0 2rem;
+        .app-layout {
             display: flex;
-            gap: 0;
-            position: sticky;
-            top: 52px;
-            z-index: 99;
+            height: calc(100vh - var(--titlebar-height));
+            overflow: hidden;
         }
 
-        .tab-btn {
+        /* ── Left Sidebar Navigation ── */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0;
+            flex-shrink: 0;
+            gap: 0.25rem;
+        }
+
+        .sidebar-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: transparent;
-            border: none;
-            border-bottom: 2px solid transparent;
+            border: 1px solid transparent;
             color: var(--text-muted);
-            font-family: inherit;
-            font-size: 0.72rem;
-            font-weight: 600;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            padding: 0.85rem 1.5rem;
             cursor: pointer;
             transition: all 0.3s ease-in-out;
             position: relative;
+            flex-direction: column;
+            gap: 2px;
         }
 
-        .tab-btn:hover {
+        .sidebar-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .sidebar-btn-label {
+            font-size: 0.5rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .sidebar-btn:hover {
+            background: var(--bg-hover);
             color: var(--text-secondary);
-            background: rgba(88,166,255,0.03);
         }
 
-        .tab-btn.active {
+        .sidebar-btn.active {
+            background: var(--blue-bg);
+            border-color: rgba(88,166,255,0.2);
             color: var(--blue-bright);
-            border-bottom-color: var(--blue-bright);
         }
 
-        .tab-btn.active::after {
+        .sidebar-btn.active::before {
             content: '';
             position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 2px;
+            left: -1px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
             background: var(--blue-bright);
-            box-shadow: 0 0 8px rgba(88,166,255,0.4);
+            border-radius: 1px;
         }
 
-        .tab-btn .tab-count {
-            display: inline-flex;
+        .sidebar-spacer {
+            flex: 1;
+        }
+
+        .sidebar-bottom {
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-width: 16px;
-            height: 16px;
-            padding: 0 4px;
-            background: var(--bg-hover);
-            border-radius: 8px;
-            font-size: 0.58rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            margin-left: 0.5rem;
-            vertical-align: middle;
-            transition: all 0.3s ease-in-out;
+            gap: 0.25rem;
         }
 
-        .tab-btn.active .tab-count {
-            background: var(--blue-bg);
+        .sidebar-btn.btn-fetch {
             color: var(--blue-bright);
         }
 
-        /* ══════════════════
-           TAB CONTENT PANELS
-           ══════════════════ */
-        .tab-panel {
-            display: none;
-            opacity: 0;
-            transform: translateY(8px);
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        .sidebar-btn.btn-fetch:hover {
+            background: rgba(88,166,255,0.1);
+            color: var(--blue-bright);
         }
 
-        .tab-panel.active {
-            display: block;
+        .sidebar-btn.btn-fetch.loading {
+            opacity: 0.5;
+            pointer-events: none;
         }
 
-        .tab-panel.visible {
-            opacity: 1;
-            transform: translateY(0);
+        .file-status {
+            font-size: 0.45rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+            text-align: center;
+            margin-top: -2px;
         }
 
-        .container {
-            max-width: 1440px;
-            margin: 0 auto;
-            padding: 1.75rem 2rem 3rem;
+        .file-status.watching {
+            color: var(--green-dim);
         }
 
-        /* ── Date Banner ── */
+        /* ── Main Content Area ── */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* ── Content Header (inside main area) ── */
+        .content-header {
+            padding: 1.25rem 2rem 0;
+        }
+
         .date-banner {
-            margin-bottom: 2rem;
             padding-bottom: 1.25rem;
             border-bottom: 1px solid var(--border-subtle);
         }
@@ -302,6 +330,30 @@
         .date-banner .meta em {
             color: var(--amber-bright);
             font-style: normal;
+        }
+
+        .container {
+            max-width: 1400px;
+            padding: 1.5rem 2rem 3rem;
+        }
+
+        /* ══════════════════
+           TAB CONTENT PANELS
+           ══════════════════ */
+        .tab-panel {
+            display: none;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .tab-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         /* ══════════════════
@@ -332,7 +384,6 @@
             border-bottom: 1px solid var(--border-subtle);
         }
 
-        /* ── Collapsible Card ── */
         .card.collapsible .card-head {
             cursor: pointer;
             user-select: none;
@@ -411,7 +462,7 @@
         .tag-blue   { background: var(--blue-bg);    color: var(--blue-bright);   border-color: rgba(88,166,255,0.2); }
 
         /* ══════════════════
-           TABLE SYSTEM (BLOOMBERG-STYLE)
+           TABLE SYSTEM
            ══════════════════ */
         .tbl {
             width: 100%;
@@ -452,16 +503,11 @@
 
         .tbl tbody tr:last-child td { border-bottom: none; }
 
-        .tbl .col-dim {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
+        .tbl .col-dim { color: var(--text-primary); font-weight: 600; }
         .tbl .col-pos { color: var(--green-bright); font-weight: 600; }
         .tbl .col-neg { color: var(--red-bright);   font-weight: 600; }
         .tbl .col-warn { color: var(--amber-bright); font-weight: 600; }
 
-        /* ── Table Row Click-Highlight ── */
         .tbl tbody tr {
             cursor: pointer;
             transition: background 0.15s ease;
@@ -480,7 +526,6 @@
             box-shadow: inset 3px 0 0 var(--blue-bright);
         }
 
-        /* ── Clickable Stock Code ── */
         .stock-code {
             color: var(--cyan-bright);
             cursor: pointer;
@@ -514,9 +559,7 @@
             transition: border-color 0.3s ease-in-out;
         }
 
-        .metric-cell:hover {
-            border-color: var(--border);
-        }
+        .metric-cell:hover { border-color: var(--border); }
 
         .metric-cell .m-label {
             font-size: 0.65rem;
@@ -569,28 +612,13 @@
             margin-bottom: 0.65rem;
         }
 
-        .track-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--green-bright);
-        }
-
+        .track-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--green-bright); }
         .track-indicator.red   { background: var(--red-bright); }
         .track-indicator.amber { background: var(--amber-bright); }
 
-        .track-title {
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
+        .track-title { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
 
-        .track-body {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            line-height: 1.7;
-        }
-
+        .track-body { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
         .track-body strong { color: var(--text-primary); }
 
         /* ══════════════════
@@ -610,18 +638,7 @@
 
         .tier-row:hover { border-color: var(--border); background: var(--bg-hover); }
 
-        .tier-num {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            flex-shrink: 0;
-        }
-
+        .tier-num { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; }
         .tier-1 { background: #F0B429; color: #0D1117; }
         .tier-2 { background: #8B949E; color: #0D1117; }
         .tier-3 { background: #A06B25; color: #0D1117; }
@@ -630,345 +647,71 @@
         .tier-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
         .tier-desc { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.15rem; }
 
-        .tier-chip {
-            font-size: 0.62rem;
-            padding: 0.15rem 0.5rem;
-            background: var(--blue-bg);
-            border: 1px solid rgba(88,166,255,0.15);
-            border-radius: 3px;
-            color: var(--blue-bright);
-            letter-spacing: 0.3px;
-            white-space: nowrap;
-        }
+        .tier-chip { font-size: 0.62rem; padding: 0.15rem 0.5rem; background: var(--blue-bg); border: 1px solid rgba(88,166,255,0.15); border-radius: 3px; color: var(--blue-bright); letter-spacing: 0.3px; white-space: nowrap; }
 
         /* ══════════════════
-           ALERT BOX
+           ALERT / INSIGHT / CONCLUSION
            ══════════════════ */
-        .alert-panel {
-            background: var(--red-bg);
-            border: 1px solid rgba(248,81,73,0.25);
-            border-radius: var(--radius-sm);
-            padding: 1.15rem 1.25rem;
-            margin-top: 1.25rem;
-        }
-
-        .alert-panel .alert-head {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--red-bright);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .alert-panel .alert-head::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--red-bright);
-            animation: pulse-dot 1.5s ease-in-out infinite;
-        }
-
-        .alert-panel p,
-        .alert-panel li {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            line-height: 1.7;
-        }
-
+        .alert-panel { background: var(--red-bg); border: 1px solid rgba(248,81,73,0.25); border-radius: var(--radius-sm); padding: 1.15rem 1.25rem; margin-top: 1.25rem; }
+        .alert-panel .alert-head { font-size: 0.75rem; font-weight: 700; color: var(--red-bright); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+        .alert-panel .alert-head::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--red-bright); animation: pulse-dot 1.5s ease-in-out infinite; }
+        .alert-panel p, .alert-panel li { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
         .alert-panel strong { color: var(--red-bright); }
+        .alert-panel ul { list-style: none; margin-top: 0.5rem; }
+        .alert-panel li { padding: 0.3rem 0; padding-left: 1.25rem; position: relative; }
+        .alert-panel li::before { content: '\00D7'; position: absolute; left: 0; color: var(--red-bright); font-weight: 700; }
 
-        .alert-panel ul {
-            list-style: none;
-            margin-top: 0.5rem;
-        }
-
-        .alert-panel li {
-            padding: 0.3rem 0;
-            padding-left: 1.25rem;
-            position: relative;
-        }
-
-        .alert-panel li::before {
-            content: '\00D7';
-            position: absolute;
-            left: 0;
-            color: var(--red-bright);
-            font-weight: 700;
-        }
-
-        /* ══════════════════
-           INSIGHT BOX (AMBER)
-           ══════════════════ */
-        .insight-box {
-            background: var(--amber-bg);
-            border: 1px solid rgba(210,153,34,0.2);
-            border-radius: var(--radius-sm);
-            padding: 1.15rem 1.25rem;
-            margin-top: 1.25rem;
-        }
-
-        .insight-box .insight-head {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--amber-bright);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-        }
-
-        .insight-box p {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            line-height: 1.7;
-        }
-
+        .insight-box { background: var(--amber-bg); border: 1px solid rgba(210,153,34,0.2); border-radius: var(--radius-sm); padding: 1.15rem 1.25rem; margin-top: 1.25rem; }
+        .insight-box .insight-head { font-size: 0.75rem; font-weight: 700; color: var(--amber-bright); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .insight-box p { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
         .insight-box strong { color: var(--text-primary); }
 
-        /* ══════════════════
-           CONCLUSION PANEL
-           ══════════════════ */
-        .conclusion-panel {
-            background: linear-gradient(135deg, rgba(88,166,255,0.06) 0%, rgba(57,210,192,0.06) 100%);
-            border: 1px solid rgba(88,166,255,0.2);
-            border-radius: var(--radius);
-            padding: 1.75rem;
-            margin-bottom: var(--gap);
-        }
-
-        .conclusion-panel .card-label {
-            color: var(--cyan-bright);
-            margin-bottom: 1rem;
-        }
-
-        .conclusion-panel p {
-            font-size: 0.88rem;
-            color: var(--text-secondary);
-            line-height: 1.85;
-        }
-
+        .conclusion-panel { background: linear-gradient(135deg, rgba(88,166,255,0.06) 0%, rgba(57,210,192,0.06) 100%); border: 1px solid rgba(88,166,255,0.2); border-radius: var(--radius); padding: 1.75rem; margin-bottom: var(--gap); }
+        .conclusion-panel .card-label { color: var(--cyan-bright); margin-bottom: 1rem; }
+        .conclusion-panel p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.85; }
         .conclusion-panel strong { color: var(--cyan-bright); }
 
         /* ══════════════════
-           DRAWER (SIDE PANEL)
+           DRAWER
            ══════════════════ */
-        .drawer-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 200;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        .drawer-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .drawer {
-            position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: var(--drawer-width);
-            max-width: 90vw;
-            background: var(--bg-card);
-            border-left: 1px solid var(--border);
-            z-index: 201;
-            transform: translateX(100%);
-            transition: transform 0.3s ease-in-out;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .drawer.open {
-            transform: translateX(0);
-        }
-
-        .drawer-header {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .drawer-title {
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: 0.5px;
-        }
-
-        .drawer-close {
-            background: none;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease-in-out;
-        }
-
-        .drawer-close:hover {
-            border-color: var(--text-secondary);
-            color: var(--text-primary);
-            background: var(--bg-hover);
-        }
-
-        .drawer-body {
-            padding: 1.5rem;
-            flex: 1;
-        }
-
-        .drawer-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .drawer-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .drawer-section-title {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 0.75rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-
-        .drawer-kv {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.4rem 0;
-            font-size: 0.78rem;
-        }
-
-        .drawer-kv .dk-label {
-            color: var(--text-muted);
-        }
-
-        .drawer-kv .dk-value {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
+        .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out; }
+        .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: var(--drawer-width); max-width: 90vw; background: var(--bg-card); border-left: 1px solid var(--border); z-index: 201; transform: translateX(100%); transition: transform 0.3s ease-in-out; overflow-y: auto; display: flex; flex-direction: column; }
+        .drawer.open { transform: translateX(0); }
+        .drawer-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .drawer-title { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; }
+        .drawer-close { background: none; border: 1px solid var(--border); color: var(--text-muted); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease-in-out; }
+        .drawer-close:hover { border-color: var(--text-secondary); color: var(--text-primary); background: var(--bg-hover); }
+        .drawer-body { padding: 1.5rem; flex: 1; }
+        .drawer-section { margin-bottom: 1.5rem; }
+        .drawer-section:last-child { margin-bottom: 0; }
+        .drawer-section-title { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle); }
+        .drawer-kv { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; font-size: 0.78rem; }
+        .drawer-kv .dk-label { color: var(--text-muted); }
+        .drawer-kv .dk-value { color: var(--text-primary); font-weight: 600; }
         .drawer-kv .dk-value.pos { color: var(--green-bright); }
         .drawer-kv .dk-value.neg { color: var(--red-bright); }
-
-        .drawer-text {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            line-height: 1.75;
-        }
-
+        .drawer-text { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.75; }
         .drawer-text strong { color: var(--text-primary); }
-
-        .drawer-tag {
-            display: inline-block;
-            padding: 0.2rem 0.55rem;
-            border-radius: 3px;
-            font-size: 0.62rem;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-        }
-
+        .drawer-tag { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 3px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.3px; }
         .drawer-tag-logic { background: var(--blue-bg); color: var(--blue-bright); }
         .drawer-tag-risk  { background: var(--red-bg); color: var(--red-bright); }
         .drawer-tag-action { background: var(--green-bg); color: var(--green-bright); }
 
         /* ══════════════════
-           NUMBER FLASH EFFECT
+           FLASH / TOAST
            ══════════════════ */
-        @keyframes flash-number {
-            0% { opacity: 1; }
-            25% { opacity: 0.3; }
-            50% { opacity: 1; }
-            75% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes flash-number { 0% { opacity: 1; } 25% { opacity: 0.3; } 50% { opacity: 1; } 75% { opacity: 0.5; } 100% { opacity: 1; } }
+        .flash { animation: flash-number 0.6s ease-in-out; }
 
-        .flash {
-            animation: flash-number 0.6s ease-in-out;
-        }
-
-        /* ══════════════════
-           LOADING SKELETON
-           ══════════════════ */
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .skeleton {
-            background: linear-gradient(90deg, var(--bg-hover) 25%, var(--bg-elevated) 50%, var(--bg-hover) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s ease-in-out infinite;
-            border-radius: 4px;
-            min-height: 1em;
-            min-width: 3em;
-        }
-
-        /* ══════════════════
-           TOAST NOTIFICATION
-           ══════════════════ */
-        .toast-container {
-            position: fixed;
-            top: 60px;
-            right: 1.5rem;
-            z-index: 300;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .toast {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 0.75rem 1.25rem;
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-            transform: translateX(120%);
-            transition: transform 0.3s ease-in-out;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .toast.show {
-            transform: translateX(0);
-        }
-
+        .toast-container { position: fixed; top: 50px; right: 1.5rem; z-index: 300; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 1.25rem; font-size: 0.72rem; color: var(--text-secondary); box-shadow: 0 8px 24px rgba(0,0,0,0.4); transform: translateX(120%); transition: transform 0.3s ease-in-out; display: flex; align-items: center; gap: 0.5rem; }
+        .toast.show { transform: translateX(0); }
         .toast.success { border-left: 3px solid var(--green-bright); }
         .toast.error   { border-left: 3px solid var(--red-bright); }
         .toast.info    { border-left: 3px solid var(--blue-bright); }
-
-        .toast-icon {
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
+        .toast-icon { font-size: 0.85rem; flex-shrink: 0; }
 
         /* ══════════════════
            RESPONSIVE
@@ -976,352 +719,339 @@
         @media (max-width: 1024px) {
             .metric-grid { grid-template-columns: repeat(2, 1fr); }
         }
-
         @media (max-width: 768px) {
             .metric-grid { grid-template-columns: 1fr; }
+            .sidebar { width: 50px; }
+            .sidebar-btn { width: 38px; height: 38px; }
+            .sidebar-btn-label { display: none; }
             .container { padding: 1rem; }
-            .terminal-bar { padding: 0 1rem; }
-            .terminal-subtitle { display: none; }
-            .tab-nav { padding: 0 0.5rem; overflow-x: auto; }
-            .tab-btn { padding: 0.75rem 0.85rem; font-size: 0.65rem; white-space: nowrap; }
-            .card { padding: 1.25rem; }
             .drawer { width: 100vw; max-width: 100vw; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ═══ TERMINAL BAR ═══ -->
-    <header class="terminal-bar">
-        <div class="terminal-brand">
-            <div class="terminal-logo">&alpha;</div>
-            <span class="terminal-title">Alpha-Q 2.1</span>
-            <span class="terminal-subtitle">交互式交易终端</span>
+    <!-- ═══ CUSTOM TITLE BAR ═══ -->
+    <div class="titlebar" id="titlebar">
+        <div class="titlebar-brand">
+            <div class="titlebar-logo">&alpha;</div>
+            <span class="titlebar-name">ALPHA-Q</span>
+            <span class="titlebar-version">v3.0</span>
         </div>
-        <div class="terminal-status">
-            <button class="btn-fetch" id="btnFetch" onclick="fetchData()">Fetch Data</button>
+        <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
-            <span class="terminal-time" id="clock">--:--:--</span>
+            <span class="titlebar-clock" id="clock">--:--:--</span>
         </div>
-    </header>
-
-    <!-- ═══ TAB NAVIGATION ═══ -->
-    <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">
-            市场概览 <span class="tab-count">4</span>
-        </button>
-        <button class="tab-btn" data-tab="logic" onclick="switchTab('logic')">
-            逻辑对账 <span class="tab-count">2</span>
-        </button>
-        <button class="tab-btn" data-tab="plan" onclick="switchTab('plan')">
-            交易预案 <span class="tab-count">2</span>
-        </button>
-    </nav>
-
-    <!-- ═══ MAIN ═══ -->
-    <div class="container">
-
-        <!-- Date Banner -->
-        <div class="date-banner">
-            <h2>REVIEW <span>//</span> <span id="review-date">2026-04-28</span></h2>
-            <p class="meta">逻辑深度复盘 · 交互式终端 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+        <div class="titlebar-btns">
+            <button class="titlebar-btn" id="btnMinimize" title="最小化">
+                <svg viewBox="0 0 10 10"><line x1="1" y1="5" x2="9" y2="5"/></svg>
+            </button>
+            <button class="titlebar-btn" id="btnMaximize" title="最大化">
+                <svg viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" rx="1"/></svg>
+            </button>
+            <button class="titlebar-btn btn-close" id="btnClose" title="关闭">
+                <svg viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/></svg>
+            </button>
         </div>
-
-        <!-- ═══════════════════════════════════
-             TAB 1: 市场概览
-             ═══════════════════════════════════ -->
-        <div class="tab-panel active visible" id="panel-overview">
-
-            <!-- Step 2: 市场定调 -->
-            <div class="card">
-                <div class="card-head">
-                    <div class="card-label"><span class="step-num">2</span> 市场定调</div>
-                    <span class="tag tag-amber">混沌轮动期</span>
-                </div>
-                <div class="metric-grid" id="indices-grid">
-                    <!-- Filled by JS -->
-                </div>
-                <table class="tbl">
-                    <thead><tr><th>维度</th><th>数据</th><th>结论</th></tr></thead>
-                    <tbody id="sentiment-tbody">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
-                <div class="insight-box" id="emotion-insight">
-                    <div class="insight-head">情绪周期判定</div>
-                    <p id="emotion-text"></p>
-                </div>
-            </div>
-
-            <!-- Step 3: 主线方向 -->
-            <div class="card">
-                <div class="card-head">
-                    <div class="card-label"><span class="step-num">3</span> 主线方向与地位属性定性</div>
-                </div>
-                <div id="mainlines-container">
-                    <!-- Filled by JS -->
-                </div>
-            </div>
-
-            <!-- Step T: 第一梯队 -->
-            <div class="card">
-                <div class="card-head">
-                    <div class="card-label"><span class="step-num">T</span> 第一梯队 · 最高辨识度核心</div>
-                </div>
-                <div id="top-tier-container">
-                    <!-- Filled by JS -->
-                </div>
-            </div>
-
-            <!-- Step 4: 亏钱效应探测 -->
-            <div class="card">
-                <div class="card-head">
-                    <div class="card-label"><span class="step-num">4</span> 亏钱效应探测</div>
-                    <span class="tag tag-red">核按钮监控</span>
-                </div>
-                <table class="tbl">
-                    <thead><tr><th>#</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
-                    <tbody id="loss-tbody">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
-                <div class="alert-panel">
-                    <div class="alert-head">核按钮预警</div>
-                    <p id="loss-alert"></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════
-             TAB 2: 逻辑对账
-             ═══════════════════════════════════ -->
-        <div class="tab-panel" id="panel-logic">
-
-            <!-- Step 0: 错题召回 -->
-            <div class="card collapsible collapsed" id="step0">
-                <div class="card-head" onclick="toggleCard('step0')">
-                    <div class="card-label"><span class="step-num">0</span> 历史错题召回</div>
-                    <span class="tag tag-amber">修正规则</span>
-                </div>
-                <div class="card-body">
-                    <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75;">
-                        <strong style="color:var(--text-primary)">错题本检索：</strong><span id="error-recall-text"></span>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Step 1: 逻辑对账 -->
-            <div class="card">
-                <div class="card-head">
-                    <div class="card-label"><span class="step-num">1</span> 逻辑对账 · 昨日预期 vs 今日实盘</div>
-                    <span class="tag tag-blue">CORE</span>
-                </div>
-                <table class="tbl">
-                    <thead>
-                        <tr><th>维度</th><th>昨日预期 (4/27)</th><th>今日实盘 (4/28)</th><th>预期差</th></tr>
-                    </thead>
-                    <tbody id="logic-tbody">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
-                <div class="insight-box" id="correction-insight">
-                    <div class="insight-head">逻辑修正定论</div>
-                    <p id="correction-text"></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════
-             TAB 3: 交易预案
-             ═══════════════════════════════════ -->
-        <div class="tab-panel" id="panel-plan">
-
-            <!-- Step 5: 明日预案 -->
-            <div class="card">
-                <div class="card-head">
-                    <div class="card-label"><span class="step-num">5</span> 明日预案</div>
-                    <span class="tag tag-blue">偏防守</span>
-                </div>
-                <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1.25rem;">
-                    <strong style="color:var(--text-primary)">总体策略：</strong><span id="plan-strategy"></span>
-                </p>
-                <table class="tbl" style="margin-bottom:1.5rem;">
-                    <thead><tr><th>维度</th><th>建议</th></tr></thead>
-                    <tbody id="plan-guide-tbody">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
-                <table class="tbl">
-                    <thead><tr><th>方向</th><th>核心标的</th><th>触发条件</th></tr></thead>
-                    <tbody id="plan-action-tbody">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
-                <div class="alert-panel">
-                    <div class="alert-head">回避方向</div>
-                    <ul id="avoid-list">
-                        <!-- Filled by JS -->
-                    </ul>
-                </div>
-            </div>
-
-            <!-- 军师总结 -->
-            <div class="conclusion-panel">
-                <div class="card-label" style="margin-bottom:1rem;">
-                    <span class="step-num" style="border-color:var(--cyan-bright);color:var(--cyan-bright);background:rgba(57,210,192,0.08);">&Sigma;</span>
-                    军师总结
-                </div>
-                <p id="conclusion-text"></p>
-            </div>
-        </div>
-
     </div>
 
-    <!-- ═══ DRAWER OVERLAY ═══ -->
-    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+    <!-- ═══ APP LAYOUT: SIDEBAR + CONTENT ═══ -->
+    <div class="app-layout">
 
-    <!-- ═══ DRAWER SIDE PANEL ═══ -->
+        <!-- ── Left Sidebar ── -->
+        <nav class="sidebar">
+            <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="市场概览">
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                <span class="sidebar-btn-label">概览</span>
+            </button>
+            <button class="sidebar-btn" data-tab="logic" onclick="switchTab('logic')" title="逻辑对账">
+                <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3z" fill="none"/><path d="M21 21H13V13H21V21Z" fill="currentColor" opacity="0.3"/></svg>
+                <span class="sidebar-btn-label">对账</span>
+            </button>
+            <button class="sidebar-btn" data-tab="plan" onclick="switchTab('plan')" title="交易预案">
+                <svg viewBox="0 0 24 24"><path d="M9 5H7v2h2V5zm0 4H7v2h2V9zm0 4H7v2h2v-2zm4-8h-2v2h2V5zm0 4h-2v2h2V9zm0 4h-2v2h2v-2zm4-8h-2v2h2V5zm0 4h-2v2h2V9zm0 4h-2v2h2v-2z" fill="currentColor"/><path d="M3 19h18v2H3v-2z"/></svg>
+                <span class="sidebar-btn-label">预案</span>
+            </button>
+
+            <div class="sidebar-spacer"></div>
+
+            <div class="sidebar-bottom">
+                <button class="sidebar-btn btn-fetch" id="btnFetch" onclick="fetchData()" title="重新加载数据">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    <span class="sidebar-btn-label">刷新</span>
+                </button>
+                <span class="file-status" id="fileStatus">--</span>
+            </div>
+        </nav>
+
+        <!-- ── Main Content ── -->
+        <div class="main-content">
+            <div class="content-header">
+                <div class="date-banner">
+                    <h2>REVIEW <span>//</span> <span id="review-date">----/--/--</span></h2>
+                    <p class="meta">逻辑深度复盘 · 桌面终端 v3.0 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                </div>
+            </div>
+
+            <div class="container">
+
+                <!-- ═══ TAB 1: 市场概览 ═══ -->
+                <div class="tab-panel active visible" id="panel-overview">
+                    <div class="card">
+                        <div class="card-head">
+                            <div class="card-label"><span class="step-num">2</span> 市场定调</div>
+                            <span class="tag tag-amber">混沌轮动期</span>
+                        </div>
+                        <div class="metric-grid" id="indices-grid"></div>
+                        <table class="tbl">
+                            <thead><tr><th>维度</th><th>数据</th><th>结论</th></tr></thead>
+                            <tbody id="sentiment-tbody"></tbody>
+                        </table>
+                        <div class="insight-box">
+                            <div class="insight-head">情绪周期判定</div>
+                            <p id="emotion-text"></p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-head">
+                            <div class="card-label"><span class="step-num">3</span> 主线方向与地位属性定性</div>
+                        </div>
+                        <div id="mainlines-container"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-head">
+                            <div class="card-label"><span class="step-num">T</span> 第一梯队 · 最高辨识度核心</div>
+                        </div>
+                        <div id="top-tier-container"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-head">
+                            <div class="card-label"><span class="step-num">4</span> 亏钱效应探测</div>
+                            <span class="tag tag-red">核按钮监控</span>
+                        </div>
+                        <table class="tbl">
+                            <thead><tr><th>#</th><th>标的</th><th>跌幅</th><th>特征</th></tr></thead>
+                            <tbody id="loss-tbody"></tbody>
+                        </table>
+                        <div class="alert-panel">
+                            <div class="alert-head">核按钮预警</div>
+                            <p id="loss-alert"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ TAB 2: 逻辑对账 ═══ -->
+                <div class="tab-panel" id="panel-logic">
+                    <div class="card collapsible collapsed" id="step0">
+                        <div class="card-head" onclick="toggleCard('step0')">
+                            <div class="card-label"><span class="step-num">0</span> 历史错题召回</div>
+                            <span class="tag tag-amber">修正规则</span>
+                        </div>
+                        <div class="card-body">
+                            <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.75;">
+                                <strong style="color:var(--text-primary)">错题本检索：</strong><span id="error-recall-text"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-head">
+                            <div class="card-label"><span class="step-num">1</span> 逻辑对账 · 昨日预期 vs 今日实盘</div>
+                            <span class="tag tag-blue">CORE</span>
+                        </div>
+                        <table class="tbl">
+                            <thead><tr><th>维度</th><th>昨日预期 (4/27)</th><th>今日实盘 (4/28)</th><th>预期差</th></tr></thead>
+                            <tbody id="logic-tbody"></tbody>
+                        </table>
+                        <div class="insight-box">
+                            <div class="insight-head">逻辑修正定论</div>
+                            <p id="correction-text"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ TAB 3: 交易预案 ═══ -->
+                <div class="tab-panel" id="panel-plan">
+                    <div class="card">
+                        <div class="card-head">
+                            <div class="card-label"><span class="step-num">5</span> 明日预案</div>
+                            <span class="tag tag-blue">偏防守</span>
+                        </div>
+                        <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1.25rem;">
+                            <strong style="color:var(--text-primary)">总体策略：</strong><span id="plan-strategy"></span>
+                        </p>
+                        <table class="tbl" style="margin-bottom:1.5rem;">
+                            <thead><tr><th>维度</th><th>建议</th></tr></thead>
+                            <tbody id="plan-guide-tbody"></tbody>
+                        </table>
+                        <table class="tbl">
+                            <thead><tr><th>方向</th><th>核心标的</th><th>触发条件</th></tr></thead>
+                            <tbody id="plan-action-tbody"></tbody>
+                        </table>
+                        <div class="alert-panel">
+                            <div class="alert-head">回避方向</div>
+                            <ul id="avoid-list"></ul>
+                        </div>
+                    </div>
+
+                    <div class="conclusion-panel">
+                        <div class="card-label" style="margin-bottom:1rem;">
+                            <span class="step-num" style="border-color:var(--cyan-bright);color:var(--cyan-bright);background:rgba(57,210,192,0.08);">&Sigma;</span>
+                            军师总结
+                        </div>
+                        <p id="conclusion-text"></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ DRAWER ═══ -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
     <div class="drawer" id="drawer">
         <div class="drawer-header">
             <span class="drawer-title" id="drawerTitle">标的深度分析</span>
             <button class="drawer-close" onclick="closeDrawer()">&times;</button>
         </div>
-        <div class="drawer-body" id="drawerBody">
-            <!-- Filled dynamically -->
-        </div>
+        <div class="drawer-body" id="drawerBody"></div>
     </div>
 
-    <!-- ═══ TOAST CONTAINER ═══ -->
+    <!-- ═══ TOAST ═══ -->
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- ═══ SCRIPTS ═══ -->
     <script>
         /* ═══════════════════════════════════════════
-           INTERACTIVE TERMINAL ENGINE v2.1
+           ALPHA-Q 3.0 — INTERACTIVE TERMINAL ENGINE
+           Electron Desktop + Web Compatible
            ═══════════════════════════════════════════ */
 
-        // ── Global State ──
-        let appData = null;
+        var appData = null;
+        var isElectron = !!(window.electronAPI);
 
-        // ── Clock ──
+        // ══════════════════
+        //  CLOCK
+        // ══════════════════
         function updateClock() {
-            const now = new Date();
-            const h = String(now.getHours()).padStart(2, '0');
-            const m = String(now.getMinutes()).padStart(2, '0');
-            const s = String(now.getSeconds()).padStart(2, '0');
-            const el = document.getElementById('clock');
+            var now = new Date();
+            var h = String(now.getHours()).padStart(2, '0');
+            var m = String(now.getMinutes()).padStart(2, '0');
+            var s = String(now.getSeconds()).padStart(2, '0');
+            var el = document.getElementById('clock');
             if (el) el.textContent = h + ':' + m + ':' + s;
         }
         updateClock();
         setInterval(updateClock, 1000);
 
         // ══════════════════
-        //  TAB SWITCHING
+        //  ELECTRON: TITLE BAR CONTROLS
+        // ══════════════════
+        if (isElectron) {
+            document.getElementById('btnMinimize').addEventListener('click', function () {
+                window.electronAPI.minimize();
+            });
+            document.getElementById('btnMaximize').addEventListener('click', function () {
+                window.electronAPI.maximize();
+            });
+            document.getElementById('btnClose').addEventListener('click', function () {
+                window.electronAPI.close();
+            });
+
+            // Listen for file watcher updates
+            window.electronAPI.onDataUpdated(function (data) {
+                appData = data;
+                renderAll(data);
+                document.querySelectorAll('.m-value').forEach(flashElement);
+                showToast('数据已自动更新', 'success');
+                updateFileStatus('watching', 'AUTO');
+            });
+
+            // Show file status
+            window.electronAPI.getDataPath().then(function (p) {
+                console.log('[Data] Path:', p);
+                updateFileStatus('watching', 'LIVE');
+            });
+        } else {
+            // Web mode: hide Electron-specific elements, adjust layout
+            document.getElementById('titlebar').style.display = 'none';
+            document.querySelector('.app-layout').style.height = '100vh';
+            updateFileStatus('', 'WEB');
+        }
+
+        function updateFileStatus(cls, text) {
+            var el = document.getElementById('fileStatus');
+            if (el) {
+                el.className = 'file-status' + (cls ? ' ' + cls : '');
+                el.textContent = text;
+            }
+        }
+
+        // ══════════════════
+        //  TAB SWITCHING (SIDEBAR)
         // ══════════════════
         function switchTab(tabId) {
-            // Update buttons
-            document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            document.querySelectorAll('.sidebar-btn[data-tab]').forEach(function (btn) {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
 
-            // Hide all panels with transition
-            document.querySelectorAll('.tab-panel').forEach(function(panel) {
+            document.querySelectorAll('.tab-panel').forEach(function (panel) {
                 panel.classList.remove('visible');
-                // Wait for fade-out, then hide
-                setTimeout(function() {
+                setTimeout(function () {
                     if (!panel.classList.contains('visible')) {
                         panel.classList.remove('active');
                     }
                 }, 300);
             });
 
-            // Show target panel
             var target = document.getElementById('panel-' + tabId);
             if (target) {
                 target.classList.add('active');
-                // Trigger reflow for transition
                 void target.offsetHeight;
-                requestAnimationFrame(function() {
+                requestAnimationFrame(function () {
                     target.classList.add('visible');
                 });
             }
         }
 
         // ══════════════════
-        //  COLLAPSIBLE CARD
+        //  COLLAPSIBLE / HIGHLIGHT / DRAWER / TOAST
         // ══════════════════
-        function toggleCard(id) {
-            var el = document.getElementById(id);
-            if (el) el.classList.toggle('collapsed');
-        }
+        function toggleCard(id) { var el = document.getElementById(id); if (el) el.classList.toggle('collapsed'); }
 
-        // ══════════════════
-        //  TABLE ROW HIGHLIGHT
-        // ══════════════════
         function initTableHighlight() {
-            document.querySelectorAll('.tbl tbody').forEach(function(tbody) {
-                tbody.addEventListener('click', function(e) {
-                    // Don't toggle if clicking a stock code link
+            document.querySelectorAll('.tbl tbody').forEach(function (tbody) {
+                tbody.addEventListener('click', function (e) {
                     if (e.target.classList.contains('stock-code')) return;
                     var row = e.target.closest('tr');
                     if (!row) return;
-                    if (row.classList.contains('row-selected')) {
-                        row.classList.remove('row-selected');
-                    } else {
-                        tbody.querySelectorAll('tr.row-selected').forEach(function(r) {
-                            r.classList.remove('row-selected');
-                        });
-                        row.classList.add('row-selected');
-                    }
+                    if (row.classList.contains('row-selected')) { row.classList.remove('row-selected'); }
+                    else { tbody.querySelectorAll('tr.row-selected').forEach(function (r) { r.classList.remove('row-selected'); }); row.classList.add('row-selected'); }
                 });
             });
         }
 
-        // ══════════════════
-        //  DRAWER
-        // ══════════════════
         function openDrawer(code) {
             var data = (appData && appData.deepAnalysis) ? appData.deepAnalysis[code] : null;
-            if (!data) {
-                showToast('未找到 ' + code + ' 的深度数据', 'error');
-                return;
-            }
-
-            document.getElementById('drawerTitle').textContent = data.code + ' ' + data.name + ' · 深度分析';
-
-            var html = '';
-            // Basic Info
-            html += '<div class="drawer-section">';
-            html += '<div class="drawer-section-title">基本信息</div>';
-            html += '<div class="drawer-kv"><span class="dk-label">标的代码</span><span class="dk-value">' + data.code + '</span></div>';
-            html += '<div class="drawer-kv"><span class="dk-label">标的名称</span><span class="dk-value">' + data.name + '</span></div>';
-            html += '<div class="drawer-kv"><span class="dk-label">所属板块</span><span class="dk-value">' + data.sector + '</span></div>';
-            html += '<div class="drawer-kv"><span class="dk-label">最新价</span><span class="dk-value">' + data.price + '</span></div>';
-            html += '<div class="drawer-kv"><span class="dk-label">涨跌幅</span><span class="dk-value ' + (data.change.startsWith('+') ? 'pos' : 'neg') + '">' + data.change + '</span></div>';
-            html += '<div class="drawer-kv"><span class="dk-label">连板</span><span class="dk-value">' + data.board + '</span></div>';
-            html += '<div class="drawer-kv"><span class="dk-label">成交额</span><span class="dk-value">' + data.volume + '</span></div>';
-            html += '<div class="drawer-kv"><span class="dk-label">换手率</span><span class="dk-value">' + data.turnover + '</span></div>';
-            html += '</div>';
-
-            // Logic
-            html += '<div class="drawer-section">';
-            html += '<div class="drawer-section-title"><span class="drawer-tag drawer-tag-logic">逻辑</span></div>';
-            html += '<p class="drawer-text">' + data.logic + '</p>';
-            html += '</div>';
-
-            // Risk
-            html += '<div class="drawer-section">';
-            html += '<div class="drawer-section-title"><span class="drawer-tag drawer-tag-risk">风险</span></div>';
-            html += '<p class="drawer-text">' + data.risk + '</p>';
-            html += '</div>';
-
-            // Action
-            html += '<div class="drawer-section">';
-            html += '<div class="drawer-section-title"><span class="drawer-tag drawer-tag-action">操作建议</span></div>';
-            html += '<p class="drawer-text">' + data.action + '</p>';
-            html += '</div>';
-
-            document.getElementById('drawerBody').innerHTML = html;
+            if (!data) { showToast('未找到 ' + code + ' 的深度数据', 'error'); return; }
+            document.getElementById('drawerTitle').textContent = data.code + ' ' + data.name + ' \u00B7 深度分析';
+            var h = '';
+            h += '<div class="drawer-section"><div class="drawer-section-title">基本信息</div>';
+            h += '<div class="drawer-kv"><span class="dk-label">标的代码</span><span class="dk-value">' + data.code + '</span></div>';
+            h += '<div class="drawer-kv"><span class="dk-label">标的名称</span><span class="dk-value">' + data.name + '</span></div>';
+            h += '<div class="drawer-kv"><span class="dk-label">所属板块</span><span class="dk-value">' + data.sector + '</span></div>';
+            h += '<div class="drawer-kv"><span class="dk-label">最新价</span><span class="dk-value">' + data.price + '</span></div>';
+            h += '<div class="drawer-kv"><span class="dk-label">涨跌幅</span><span class="dk-value ' + (data.change.charAt(0) === '+' ? 'pos' : 'neg') + '">' + data.change + '</span></div>';
+            h += '<div class="drawer-kv"><span class="dk-label">连板</span><span class="dk-value">' + data.board + '</span></div>';
+            h += '<div class="drawer-kv"><span class="dk-label">成交额</span><span class="dk-value">' + data.volume + '</span></div>';
+            h += '<div class="drawer-kv"><span class="dk-label">换手率</span><span class="dk-value">' + data.turnover + '</span></div></div>';
+            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-logic">逻辑</span></div><p class="drawer-text">' + data.logic + '</p></div>';
+            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-risk">风险</span></div><p class="drawer-text">' + data.risk + '</p></div>';
+            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-action">操作建议</span></div><p class="drawer-text">' + data.action + '</p></div>';
+            document.getElementById('drawerBody').innerHTML = h;
             document.getElementById('drawer').classList.add('open');
             document.getElementById('drawerOverlay').classList.add('open');
         }
@@ -1331,319 +1061,158 @@
             document.getElementById('drawerOverlay').classList.remove('open');
         }
 
-        // Close drawer with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeDrawer();
-        });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 
-        // ══════════════════
-        //  TOAST NOTIFICATIONS
-        // ══════════════════
         function showToast(message, type) {
             type = type || 'info';
             var container = document.getElementById('toastContainer');
             var toast = document.createElement('div');
             toast.className = 'toast ' + type;
-
             var icons = { success: '\u2713', error: '\u2717', info: '\u2139' };
             toast.innerHTML = '<span class="toast-icon">' + (icons[type] || icons.info) + '</span>' + message;
-
             container.appendChild(toast);
-
-            requestAnimationFrame(function() {
-                toast.classList.add('show');
-            });
-
-            setTimeout(function() {
-                toast.classList.remove('show');
-                setTimeout(function() {
-                    if (toast.parentNode) toast.parentNode.removeChild(toast);
-                }, 300);
-            }, 3000);
+            requestAnimationFrame(function () { toast.classList.add('show'); });
+            setTimeout(function () { toast.classList.remove('show'); setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300); }, 3000);
         }
 
-        // ══════════════════
-        //  NUMBER FLASH EFFECT
-        // ══════════════════
-        function flashElement(el) {
-            if (!el) return;
-            el.classList.remove('flash');
-            void el.offsetHeight;
-            el.classList.add('flash');
-            setTimeout(function() {
-                el.classList.remove('flash');
-            }, 600);
-        }
+        function flashElement(el) { if (!el) return; el.classList.remove('flash'); void el.offsetHeight; el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 600); }
 
         // ══════════════════
         //  RENDER FUNCTIONS
         // ══════════════════
-
         function renderIndices(data) {
-            var grid = document.getElementById('indices-grid');
-            if (!grid || !data) return;
-            grid.innerHTML = '';
-            data.forEach(function(item) {
-                var cell = document.createElement('div');
-                cell.className = 'metric-cell';
-                var typeClass = 'm-neu';
-                if (item.type === 'neg') typeClass = 'm-neg';
-                else if (item.type === 'pos') typeClass = 'm-pos';
-
-                var valueHtml = item.value;
-                if (item.label === '成交额') {
-                    var parts = item.value.split('万亿');
-                    valueHtml = parts[0] + '<span style="font-size:0.85rem;font-weight:400;color:var(--text-muted)"> 万亿</span>';
-                }
-
-                cell.innerHTML =
-                    '<div class="m-label">' + item.label + '</div>' +
-                    '<div class="m-value ' + typeClass + '">' + valueHtml + '</div>' +
-                    '<div class="m-sub" style="color:var(--text-muted)">' + item.note + '</div>';
+            var grid = document.getElementById('indices-grid'); if (!grid || !data) return; grid.innerHTML = '';
+            data.forEach(function (item) {
+                var cell = document.createElement('div'); cell.className = 'metric-cell';
+                var tc = item.type === 'neg' ? 'm-neg' : (item.type === 'pos' ? 'm-pos' : 'm-neu');
+                var vh = item.value;
+                if (item.label === '成交额') { var p = item.value.split('万亿'); vh = p[0] + '<span style="font-size:0.85rem;font-weight:400;color:var(--text-muted)"> 万亿</span>'; }
+                cell.innerHTML = '<div class="m-label">' + item.label + '</div><div class="m-value ' + tc + '">' + vh + '</div><div class="m-sub" style="color:var(--text-muted)">' + item.note + '</div>';
                 grid.appendChild(cell);
             });
         }
 
         function renderSentiment(data) {
-            var tbody = document.getElementById('sentiment-tbody');
-            if (!tbody || !data) return;
-            tbody.innerHTML = '';
-            data.forEach(function(item) {
+            var tbody = document.getElementById('sentiment-tbody'); if (!tbody || !data) return; tbody.innerHTML = '';
+            data.forEach(function (item) {
                 var tr = document.createElement('tr');
-                var conclusionHtml = item.conclusion;
-                if (item.type === 'neg') {
-                    conclusionHtml = '<span class="tag tag-red">' + item.conclusion + '</span>';
-                }
-                var dataClass = item.type === 'neg' ? ' class="col-neg"' : '';
-                tr.innerHTML =
-                    '<td class="col-dim">' + item.dim + '</td>' +
-                    '<td' + dataClass + '>' + item.data + '</td>' +
-                    '<td>' + conclusionHtml + '</td>';
+                var ch = item.conclusion; if (item.type === 'neg') ch = '<span class="tag tag-red">' + item.conclusion + '</span>';
+                var dc = item.type === 'neg' ? ' class="col-neg"' : '';
+                tr.innerHTML = '<td class="col-dim">' + item.dim + '</td><td' + dc + '>' + item.data + '</td><td>' + ch + '</td>';
                 tbody.appendChild(tr);
             });
         }
 
         function renderMainlines(data) {
-            var container = document.getElementById('mainlines-container');
-            if (!container || !data) return;
-            container.innerHTML = '';
-            data.forEach(function(item) {
-                var div = document.createElement('div');
-                var cls = 'track-item';
-                if (item.indicator === 'red') cls += ' retreat';
-                if (item.indicator === 'amber') cls += ' rotating';
-                div.className = cls;
-
-                div.innerHTML =
-                    '<div class="track-head">' +
-                        '<div class="track-indicator ' + item.indicator + '"></div>' +
-                        '<span class="track-title">' + item.title + '</span>' +
-                        '<span class="tag tag-' + item.statusType + '">' + item.status + '</span>' +
-                    '</div>' +
-                    '<div class="track-body">' + item.body + '</div>';
-                container.appendChild(div);
+            var c = document.getElementById('mainlines-container'); if (!c || !data) return; c.innerHTML = '';
+            data.forEach(function (item) {
+                var d = document.createElement('div'); var cls = 'track-item';
+                if (item.indicator === 'red') cls += ' retreat'; if (item.indicator === 'amber') cls += ' rotating';
+                d.className = cls;
+                d.innerHTML = '<div class="track-head"><div class="track-indicator ' + item.indicator + '"></div><span class="track-title">' + item.title + '</span><span class="tag tag-' + item.statusType + '">' + item.status + '</span></div><div class="track-body">' + item.body + '</div>';
+                c.appendChild(d);
             });
         }
 
         function renderTopTier(data) {
-            var container = document.getElementById('top-tier-container');
-            if (!container || !data) return;
-            container.innerHTML = '';
-            data.forEach(function(item) {
-                var div = document.createElement('div');
-                div.className = 'tier-row';
-                div.innerHTML =
-                    '<div class="tier-num tier-' + item.tier + '">' + item.rank + '</div>' +
-                    '<div class="tier-info">' +
-                        '<div class="tier-name"><span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.code + '</span> ' + item.name + '</div>' +
-                        '<div class="tier-desc">' + item.desc + '</div>' +
-                    '</div>' +
-                    '<div class="tier-chip">' + item.chip + '</div>';
-                container.appendChild(div);
+            var c = document.getElementById('top-tier-container'); if (!c || !data) return; c.innerHTML = '';
+            data.forEach(function (item) {
+                var d = document.createElement('div'); d.className = 'tier-row';
+                d.innerHTML = '<div class="tier-num tier-' + item.tier + '">' + item.rank + '</div><div class="tier-info"><div class="tier-name"><span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.code + '</span> ' + item.name + '</div><div class="tier-desc">' + item.desc + '</div></div><div class="tier-chip">' + item.chip + '</div>';
+                c.appendChild(d);
             });
         }
 
         function renderLossDetector(data) {
-            var tbody = document.getElementById('loss-tbody');
-            if (!tbody || !data) return;
-            tbody.innerHTML = '';
-            data.rows.forEach(function(item) {
-                var tr = document.createElement('tr');
-                var featureHtml = item.feature;
-                if (item.tag) {
-                    featureHtml = '<span class="tag tag-red">' + item.tag + '</span> ' + item.feature.replace(item.tag + ' ', '');
-                }
-                tr.innerHTML =
-                    '<td>' + item.id + '</td>' +
-                    '<td class="col-dim">' + item.name + '</td>' +
-                    '<td class="col-neg">' + item.change + '</td>' +
-                    '<td>' + featureHtml + '</td>';
+            var tbody = document.getElementById('loss-tbody'); if (!tbody || !data) return; tbody.innerHTML = '';
+            data.rows.forEach(function (item) {
+                var tr = document.createElement('tr'); var fh = item.feature;
+                if (item.tag) fh = '<span class="tag tag-red">' + item.tag + '</span> ' + item.feature.replace(item.tag + ' ', '');
+                tr.innerHTML = '<td>' + item.id + '</td><td class="col-dim">' + item.name + '</td><td class="col-neg">' + item.change + '</td><td>' + fh + '</td>';
                 tbody.appendChild(tr);
             });
-
-            var alertEl = document.getElementById('loss-alert');
-            if (alertEl && data.alert) alertEl.innerHTML = data.alert;
+            var al = document.getElementById('loss-alert'); if (al && data.alert) al.innerHTML = data.alert;
         }
 
         function renderLogicCheck(data) {
             if (!data) return;
-
-            // Error recall
-            var errEl = document.getElementById('error-recall-text');
-            if (errEl) errEl.innerHTML = data.errorRecall;
-
-            // Logic table
+            var e = document.getElementById('error-recall-text'); if (e) e.innerHTML = data.errorRecall;
             var tbody = document.getElementById('logic-tbody');
-            if (tbody) {
-                tbody.innerHTML = '';
-                data.logicRows.forEach(function(item) {
-                    var tr = document.createElement('tr');
-                    tr.innerHTML =
-                        '<td class="col-dim">' + item.dim + '</td>' +
-                        '<td>' + item.yesterday + '</td>' +
-                        '<td>' + item.today + '</td>' +
-                        '<td><span class="tag tag-' + item.diffType + '">' + item.diff + '</span></td>';
-                    tbody.appendChild(tr);
-                });
-            }
-
-            // Correction
-            var corrEl = document.getElementById('correction-text');
-            if (corrEl) corrEl.innerHTML = data.correction;
+            if (tbody) { tbody.innerHTML = ''; data.logicRows.forEach(function (item) { var tr = document.createElement('tr'); tr.innerHTML = '<td class="col-dim">' + item.dim + '</td><td>' + item.yesterday + '</td><td>' + item.today + '</td><td><span class="tag tag-' + item.diffType + '">' + item.diff + '</span></td>'; tbody.appendChild(tr); }); }
+            var co = document.getElementById('correction-text'); if (co) co.innerHTML = data.correction;
         }
 
         function renderTradePlan(data) {
             if (!data) return;
-
-            // Strategy
-            var stratEl = document.getElementById('plan-strategy');
-            if (stratEl) stratEl.innerHTML = data.strategy;
-
-            // Guide table
-            var guideTbody = document.getElementById('plan-guide-tbody');
-            if (guideTbody) {
-                guideTbody.innerHTML = '';
-                data.guideRows.forEach(function(item) {
-                    var tr = document.createElement('tr');
-                    var suggestClass = '';
-                    if (item.type === 'neg') suggestClass = ' class="col-neg"';
-                    else if (item.type === 'warn') suggestClass = ' class="col-warn"';
-                    else if (item.type === 'pos') suggestClass = ' class="col-pos"';
-                    tr.innerHTML =
-                        '<td class="col-dim">' + item.dim + '</td>' +
-                        '<td' + suggestClass + '>' + item.suggest + '</td>';
-                    guideTbody.appendChild(tr);
-                });
-            }
-
-            // Action table
-            var actTbody = document.getElementById('plan-action-tbody');
-            if (actTbody) {
-                actTbody.innerHTML = '';
-                data.actionRows.forEach(function(item) {
-                    var tr = document.createElement('tr');
-                    var dirClass = item.dirType === 'pos' ? 'col-pos' : (item.dirType === 'warn' ? 'col-warn' : '');
-                    var targetHtml = item.target;
-                    if (item.code && item.code !== '--') {
-                        targetHtml = '<span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.target + '</span>';
-                    }
-                    tr.innerHTML =
-                        '<td class="' + dirClass + '">' + item.direction + '</td>' +
-                        '<td class="col-dim">' + targetHtml + '</td>' +
-                        '<td>' + item.trigger + '</td>';
-                    actTbody.appendChild(tr);
-                });
-            }
-
-            // Avoid list
-            var avoidList = document.getElementById('avoid-list');
-            if (avoidList) {
-                avoidList.innerHTML = '';
-                data.avoidList.forEach(function(item) {
-                    var li = document.createElement('li');
-                    li.innerHTML = item;
-                    avoidList.appendChild(li);
-                });
-            }
-
-            // Conclusion
-            var conEl = document.getElementById('conclusion-text');
-            if (conEl) conEl.innerHTML = data.conclusion;
+            var st = document.getElementById('plan-strategy'); if (st) st.innerHTML = data.strategy;
+            var gt = document.getElementById('plan-guide-tbody');
+            if (gt) { gt.innerHTML = ''; data.guideRows.forEach(function (item) { var tr = document.createElement('tr'); var sc = item.type === 'neg' ? ' class="col-neg"' : (item.type === 'warn' ? ' class="col-warn"' : (item.type === 'pos' ? ' class="col-pos"' : '')); tr.innerHTML = '<td class="col-dim">' + item.dim + '</td><td' + sc + '>' + item.suggest + '</td>'; gt.appendChild(tr); }); }
+            var at = document.getElementById('plan-action-tbody');
+            if (at) { at.innerHTML = ''; data.actionRows.forEach(function (item) { var tr = document.createElement('tr'); var dc = item.dirType === 'pos' ? 'col-pos' : (item.dirType === 'warn' ? 'col-warn' : ''); var th = item.target; if (item.code && item.code !== '--') th = '<span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.target + '</span>'; tr.innerHTML = '<td class="' + dc + '">' + item.direction + '</td><td class="col-dim">' + th + '</td><td>' + item.trigger + '</td>'; at.appendChild(tr); }); }
+            var av = document.getElementById('avoid-list'); if (av) { av.innerHTML = ''; data.avoidList.forEach(function (item) { var li = document.createElement('li'); li.innerHTML = item; av.appendChild(li); }); }
+            var cn = document.getElementById('conclusion-text'); if (cn) cn.innerHTML = data.conclusion;
         }
 
-        // ══════════════════
-        //  FULL RENDER
-        // ══════════════════
         function renderAll(data) {
             if (!data) return;
-
-            // Date
-            var dateEl = document.getElementById('review-date');
-            if (dateEl && data.meta) {
-                var oldDate = dateEl.textContent;
-                dateEl.textContent = data.meta.date;
-                if (oldDate !== data.meta.date) flashElement(dateEl);
-            }
-
-            // Market Overview
+            var de = document.getElementById('review-date'); if (de && data.meta) { var od = de.textContent; de.textContent = data.meta.date; if (od !== data.meta.date) flashElement(de); }
             renderIndices(data.marketOverview.indices);
             renderSentiment(data.marketOverview.sentiment);
-            var emText = document.getElementById('emotion-text');
-            if (emText) emText.innerHTML = data.marketOverview.emotionCycle;
+            var et = document.getElementById('emotion-text'); if (et) et.innerHTML = data.marketOverview.emotionCycle;
             renderMainlines(data.marketOverview.mainlines);
             renderTopTier(data.marketOverview.topTier);
             renderLossDetector(data.marketOverview.lossDetector);
-
-            // Logic Check
             renderLogicCheck(data.logicCheck);
-
-            // Trade Plan
             renderTradePlan(data.tradePlan);
-
-            // Re-init table highlight
             initTableHighlight();
         }
 
         // ══════════════════
-        //  FETCH DATA
+        //  DATA FETCHING (DUAL MODE)
         // ══════════════════
         function fetchData() {
             var btn = document.getElementById('btnFetch');
-            if (!btn) return;
+            if (btn) { btn.classList.add('loading'); }
 
-            btn.classList.add('loading');
-            btn.textContent = 'Loading...';
-
-            fetch('./data.json')
-                .then(function(res) {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.json();
-                })
-                .then(function(data) {
-                    appData = data;
-                    renderAll(data);
-                    btn.classList.remove('loading');
-                    btn.textContent = 'Fetch Data';
-                    showToast('数据加载成功', 'success');
-
-                    // Flash all metric values
-                    document.querySelectorAll('.m-value').forEach(flashElement);
-                })
-                .catch(function(err) {
-                    btn.classList.remove('loading');
-                    btn.textContent = 'Fetch Data';
-                    showToast('加载失败: ' + err.message, 'error');
-                    console.error('Fetch error:', err);
+            if (isElectron) {
+                // ── Electron: read via IPC ──
+                window.electronAPI.readData().then(function (result) {
+                    if (result.success) {
+                        appData = result.data;
+                        renderAll(result.data);
+                        if (btn) btn.classList.remove('loading');
+                        showToast('数据加载成功', 'success');
+                        document.querySelectorAll('.m-value').forEach(flashElement);
+                        updateFileStatus('watching', 'LIVE');
+                    } else {
+                        if (btn) btn.classList.remove('loading');
+                        showToast('加载失败: ' + result.error, 'error');
+                        updateFileStatus('', 'ERR');
+                    }
                 });
+            } else {
+                // ── Web: fetch from HTTP ──
+                fetch('./data.json')
+                    .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+                    .then(function (data) {
+                        appData = data;
+                        renderAll(data);
+                        if (btn) btn.classList.remove('loading');
+                        showToast('数据加载成功', 'success');
+                        document.querySelectorAll('.m-value').forEach(flashElement);
+                    })
+                    .catch(function (err) {
+                        if (btn) btn.classList.remove('loading');
+                        showToast('加载失败: ' + err.message, 'error');
+                    });
+            }
         }
 
         // ══════════════════
-        //  INIT ON DOM READY
+        //  INIT
         // ══════════════════
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             initTableHighlight();
-
-            // Auto-fetch data on page load
             fetchData();
         });
     </script>
