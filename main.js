@@ -33,30 +33,52 @@ var fs = require('fs');
 var mainWindow = null;
 var dataWatcher = null;
 
-// ── Base data directory: next to the exe in packaged mode ──
+// ── Base data directory ──
+// In packaged mode, data and history live next to the exe.
+// This directory may be write-protected (e.g. Program Files),
+// so we also support falling back to userData directory.
 function getBaseDir() {
     if (app.isPackaged) {
-        return path.dirname(app.getPath('exe'));
+        var exeDir = path.dirname(app.getPath('exe'));
+        // Test if we can write to exe directory
+        var testFile = path.join(exeDir, '.alpha-q-write-test');
+        try {
+            fs.writeFileSync(testFile, '1', 'utf-8');
+            fs.unlinkSync(testFile);
+            return exeDir;
+        } catch (_e) {
+            // Fall back to userData directory (always writable)
+            var userDataDir = app.getPath('userData');
+            console.log('[Init] exe dir not writable, using userData:', userDataDir);
+            return userDataDir;
+        }
     }
     return __dirname;
 }
 
 // ── Resolve data.json path ──
-// In packaged mode, data.json lives next to the exe (user can edit it directly).
-// On first run after install, we copy it from resources/ to exe directory.
+// Priority: baseDir/data.json > resources/data.json (read-only fallback)
 function getDataPath() {
     var baseDir = getBaseDir();
     var targetPath = path.join(baseDir, 'data.json');
 
-    // First run: copy from bundled resources to exe directory
-    if (app.isPackaged && !fs.existsSync(targetPath)) {
+    // If data.json already exists in baseDir, use it
+    if (fs.existsSync(targetPath)) {
+        return targetPath;
+    }
+
+    // First run: try to copy from bundled resources to baseDir
+    if (app.isPackaged) {
         var bundledPath = path.join(process.resourcesPath, 'data.json');
         if (fs.existsSync(bundledPath)) {
             try {
                 fs.copyFileSync(bundledPath, targetPath);
                 console.log('[Init] Copied data.json to:', targetPath);
+                return targetPath;
             } catch (err) {
-                console.warn('[Init] Failed to copy data.json:', err.message);
+                console.warn('[Init] Cannot copy to baseDir:', err.message);
+                // Fall back: read directly from resources (read-only)
+                return bundledPath;
             }
         }
     }
