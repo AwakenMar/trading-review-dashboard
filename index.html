@@ -1356,11 +1356,11 @@
                     <div class="date-banner-top">
                         <h2>REVIEW <span>//</span></h2>
                         <div class="date-nav">
-                            <button class="date-nav-btn" id="btnPrevDay" onclick="switchDay(1)" title="后一天的复盘">
+                            <button class="date-nav-btn" id="btnPrevDay" onclick="switchDay(-1)" title="更早的日期">
                                 <svg viewBox="0 0 24 24" width="14" height="14"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
                             </button>
                             <span class="date-nav-current" id="review-date">----/--/--</span>
-                            <button class="date-nav-btn" id="btnNextDay" onclick="switchDay(-1)" title="前一天的复盘">
+                            <button class="date-nav-btn" id="btnNextDay" onclick="switchDay(1)" title="更晚的日期">
                                 <svg viewBox="0 0 24 24" width="14" height="14"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
                             </button>
                             <button class="date-nav-today" id="btnToday" onclick="goToToday()" title="回到今天">
@@ -1943,7 +1943,8 @@
         }
 
         function switchDay(direction) {
-            // ◀ = direction+1 = 去更晚日期, ▶ = direction-1 = 去更早日期
+            // ◀ = direction-1 = 去更早日期, ▶ = direction+1 = 去更晚日期
+            // availableDates: 升序 [oldest → newest]
             var currentDate = currentViewingDate || getMetaDate(appData);
             if (!currentDate || availableDates.length === 0) {
                 showToast('无历史数据', 'info');
@@ -1951,15 +1952,13 @@
             }
             var idx = availableDates.indexOf(currentDate);
             if (idx === -1) {
-                // Current date not in history, try nearest
-                if (direction === 1 && availableDates.length > 0) {
-                    // ◀: go to next later date
-                    loadHistoryReport(availableDates[0]);
+                // Current date not in history
+                if (direction === -1 && availableDates.length > 0) {
+                    loadHistoryReport(availableDates[availableDates.length - 1]);
                     return;
                 }
-                if (direction === -1 && availableDates.length > 0) {
-                    // ▶: go to next earlier date
-                    loadHistoryReport(availableDates[availableDates.length - 1]);
+                if (direction === 1 && availableDates.length > 0) {
+                    loadHistoryReport(availableDates[0]);
                     return;
                 }
                 showToast('无更多历史数据', 'info');
@@ -1967,12 +1966,10 @@
             }
             var newIdx = idx + direction;
             if (newIdx < 0) {
-                // ▶ at earliest: already at the oldest record
                 showToast('已经是最早的记录', 'info');
                 return;
             }
             if (newIdx >= availableDates.length) {
-                // ◀ at latest: go to today
                 goToToday();
                 return;
             }
@@ -2016,10 +2013,10 @@
 
             var idx = currentDate ? availableDates.indexOf(currentDate) : -1;
 
-            // ◀ (btnPrevDay) = switchDay(1) = 去更晚日期 → 在最后一天禁用
-            if (prevBtn) prevBtn.disabled = (idx === availableDates.length - 1) || (idx === -1 && !currentViewingDate);
-            // ▶ (btnNextDay) = switchDay(-1) = 去更早日期 → 在第一天禁用
-            if (nextBtn) nextBtn.disabled = (idx === 0) || (idx === -1 && !currentViewingDate);
+            // ◀ (btnPrevDay) = switchDay(-1) = 去更早日期 → 在最早日期(idx=0)禁用
+            if (prevBtn) prevBtn.disabled = (idx === 0) || (idx === -1 && !currentViewingDate);
+            // ▶ (btnNextDay) = switchDay(+1) = 去更晚日期 → 在最新日期禁用
+            if (nextBtn) nextBtn.disabled = (idx === availableDates.length - 1) || (idx === -1 && !currentViewingDate);
             // Today: disabled if already viewing the latest date
             if (todayBtn) todayBtn.disabled = (idx === availableDates.length - 1);
         }
