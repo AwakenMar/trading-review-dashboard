@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "trade_date": "2026-04-30",
+    "report_time": "2026-04-30 21:30:00",
+    "report_type": "daily_review",
+    "agent_id": "ykRiuv",
+    "agent_name": "龙虎榜扫地僧"
+  },
+  "marketOverview": {
+    "emotionCycle": "分歧期（高低切与新老交替）",
+    "emotionScore": 55,
+    "limitUpCount": 79,
+    "limitDownCount": 10,
+    "brokenCount": 14,
+    "brokenRate": 15,
+    "maxConsecutive": 4,
+    "totalVolume": "缩量",
+    "marketSummary": "高位杀跌（飞马、淳中跌停），中位断层（1 进 2 仅 15%），寒武纪大票涨停确立芯片新方向。节前效应明显，资金高低切换，博弈节后消息面。"
+  },
+  "mainThemes": [
+    {
+      "name": "国产芯片/AI 芯片",
+      "strength": "绝对主线",
+      "count": 13,
+      "trend": "强化",
+      "description": "寒武纪 7100 亿 20cm 首板涨停，芯原股份跟涨，业绩 + 海外映射逻辑硬。",
+      "coreStocks": [
+        "寒武纪",
+        "芯原股份",
+        "中国长城",
+        "百傲化学"
+      ]
+    },
+    {
+      "name": "商业航天",
+      "strength": "次主线",
+      "count": 9,
+      "trend": "发酵",
+      "description": "SpaceX 上市预期 + 国内发射场使用，金瑞矿业 2 板 + 宝光 3 板引领。",
+      "coreStocks": [
+        "金瑞矿业",
+        "宝光股份",
+        "上海沪工",
+        "航天工程"
+      ]
+    },
+    {
+      "name": "锂电池",
+      "strength": "辅助方向",
+      "count": 8,
+      "trend": "修复",
+      "description": "碳酸锂涨价 + 业绩超预期，永杉锂业一字 3 板打开空间。",
+      "coreStocks": [
+        "永杉锂业",
+        "丰元股份",
+        "融捷股份",
+        "盛新锂能"
+      ]
+    },
+    {
+      "name": "体育产业",
+      "strength": "轮动",
+      "count": 5,
+      "trend": "一日游",
+      "description": "世界杯催化，事件驱动为主，持续性存疑。",
+      "coreStocks": [
+        "共创草坪",
+        "舒华体育"
+      ]
+    }
+  ],
+  "coreStocks": [
+    {
+      "code": "688256",
+      "name": "寒武纪",
+      "status": "首板 (20cm)",
+      "position": "芯片趋势中军",
+      "logic": "7100 亿大票涨停，机构主导，确立科技新主线"
+    },
+    {
+      "code": "603095",
+      "name": "越剑智能",
+      "status": "4 连板 (一字)",
+      "position": "空间高度",
+      "logic": "AI 验布机，缩量加速，节后开板分歧风险大"
+    },
+    {
+      "code": "603399",
+      "name": "永杉锂业",
+      "status": "3 连板 (一字)",
+      "position": "锂电先锋",
+      "logic": "氢氧化锂涨价，一字板强势，看节后能否换手"
+    },
+    {
+      "code": "002081",
+      "name": "金螳螂",
+      "status": "10 天 8 板",
+      "position": "高位老妖",
+      "logic": "纯筹码博弈，节后极易被核，风险极大"
+    }
+  ],
+  "riskAlerts": [
+    {
+      "stock": "002210 飞马国际",
+      "risk": "跌停核按钮，老周期退潮信号"
+    },
+    {
+      "stock": "603516 淳中科技",
+      "risk": "跌停，算力方向分歧严重"
+    },
+    {
+      "stock": "001896 豫能控股",
+      "risk": "跌停，高位获利盘兑现"
+    },
+    {
+      "stock": "603629 利通电子",
+      "risk": "2 板炸板，算力中位股承压"
+    }
+  ],
+  "nextDayPlan": {
+    "stance": "节后进攻，聚焦芯片与锂电",
+    "strategy": "核心中军趋势低吸 / 新题材前排接力",
+    "avoid": "缩量一字接力 / 地产体育轮动 / 高位老妖",
+    "primaryTarget": {
+      "code": "688256",
+      "name": "寒武纪",
+      "action": "趋势低吸",
+      "trigger": "高开 3%-5% 或回踩不破均线，量比>5",
+      "cancel": "大幅低开或破均线无法收回",
+      "position": "25%"
+    },
+    "secondaryTarget": {
+      "code": "600379",
+      "name": "宝光股份",
+      "action": "2 进 3 接力",
+      "trigger": "高开快速换手封板",
+      "cancel": "低开或炸板",
+      "position": "10%"
+    }
+  }
+}
