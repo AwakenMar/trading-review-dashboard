@@ -2491,6 +2491,36 @@
                 d.deepAnalysis = {};
             }
 
+            // ── Enrich deepAnalysis with nextDayPlan action info ──
+            if (d.nextDayPlan) {
+                var np = d.nextDayPlan;
+                ['primaryTarget', 'secondaryTarget'].forEach(function(key) {
+                    var t = np[key];
+                    if (!t || !t.code) return;
+                    var actionText = t.action ? t.name + '（' + t.action + '）' : '';
+                    if (t.trigger) actionText += '；触发：' + t.trigger;
+                    if (t.cancel) actionText += '；取消：' + t.cancel;
+                    if (t.position) actionText += '；仓位：' + t.position;
+                    if (d.deepAnalysis[t.code]) {
+                        d.deepAnalysis[t.code].action = actionText || d.deepAnalysis[t.code].action;
+                    } else {
+                        d.deepAnalysis[t.code] = {
+                            code: t.code,
+                            name: t.name || '--',
+                            sector: '明日预案标的',
+                            price: '--',
+                            change: '--',
+                            board: '--',
+                            volume: '--',
+                            turnover: '--',
+                            logic: '暂无逻辑分析',
+                            risk: t.cancel || '暂无风险提示',
+                            action: actionText || '暂无操作建议'
+                        };
+                    }
+                });
+            }
+
             // ── Cleanup: remove source fields that have been adapted ──
             delete d.mainThemes;
             delete d.coreStocks;
