@@ -1356,11 +1356,11 @@
                     <div class="date-banner-top">
                         <h2>REVIEW <span>//</span></h2>
                         <div class="date-nav">
-                            <button class="date-nav-btn" id="btnPrevDay" onclick="switchDay(-1)" title="前一天的复盘">
+                            <button class="date-nav-btn" id="btnPrevDay" onclick="switchDay(1)" title="后一天的复盘">
                                 <svg viewBox="0 0 24 24" width="14" height="14"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>
                             </button>
                             <span class="date-nav-current" id="review-date">----/--/--</span>
-                            <button class="date-nav-btn" id="btnNextDay" onclick="switchDay(1)" title="后一天的复盘">
+                            <button class="date-nav-btn" id="btnNextDay" onclick="switchDay(-1)" title="前一天的复盘">
                                 <svg viewBox="0 0 24 24" width="14" height="14"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>
                             </button>
                             <button class="date-nav-today" id="btnToday" onclick="goToToday()" title="回到今天">
@@ -1974,9 +1974,20 @@
         }
 
         function goToToday() {
-            currentViewingDate = null;
-            fetchData();
-            updateDateNavUI();
+            if (isElectron) {
+                currentViewingDate = null;
+                fetchData();
+                updateDateNavUI();
+            } else {
+                // Web mode: load the latest date from history
+                if (availableDates.length > 0) {
+                    loadHistoryReport(availableDates[availableDates.length - 1]);
+                } else {
+                    currentViewingDate = null;
+                    fetchData();
+                    updateDateNavUI();
+                }
+            }
         }
 
         function updateDateNavUI() {
@@ -2676,8 +2687,19 @@
         // ══════════════════
         document.addEventListener('DOMContentLoaded', function () {
             initTableHighlight();
-            fetchData();
-            refreshAvailableDates();
+            if (!isElectron) {
+                // Web mode: load latest history first, fallback to data.json
+                refreshAvailableDates().then(function () {
+                    if (availableDates.length > 0) {
+                        loadHistoryReport(availableDates[availableDates.length - 1]);
+                    } else {
+                        fetchData();
+                    }
+                });
+            } else {
+                fetchData();
+                refreshAvailableDates();
+            }
             // Scroll-based sidebar highlight
             var mainContent = document.querySelector('.main-content');
             if (mainContent) {
