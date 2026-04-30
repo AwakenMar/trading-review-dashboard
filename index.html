@@ -1831,50 +1831,86 @@
 
         function loadHistoryList() {
             var listEl = document.getElementById('historyList');
-            if (!isElectron) {
-                listEl.innerHTML = '<div class="history-empty"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg><br>历史记录仅在桌面端可用</div>';
-                return;
-            }
-            window.electronAPI.listHistory().then(function (result) {
-                if (!result.success) {
-                    listEl.innerHTML = '<div class="history-empty">加载失败</div>';
-                    return;
-                }
-                if (result.dates.length === 0) {
-                    listEl.innerHTML = '<div class="history-empty"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><br>暂无保存的复盘记录<br>点击左侧「保存」按钮开始</div>';
-                    return;
-                }
-                var html = '';
-                result.dates.forEach(function (dateStr) {
-                    var isActive = (dateStr === currentViewingDate) ? ' active' : '';
-                    html += '<div class="history-item' + isActive + '" onclick="loadHistoryReport(\'' + dateStr + '\')">';
-                    html += '<div class="history-item-dot"></div>';
-                    html += '<div class="history-item-date">' + dateStr + '</div>';
-                    html += '</div>';
+            if (isElectron) {
+                window.electronAPI.listHistory().then(function (result) {
+                    if (!result.success) {
+                        listEl.innerHTML = '<div class="history-empty">加载失败</div>';
+                        return;
+                    }
+                    if (result.dates.length === 0) {
+                        listEl.innerHTML = '<div class="history-empty"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><br>暂无保存的复盘记录<br>点击左侧「保存」按钮开始</div>';
+                        return;
+                    }
+                    var html = '';
+                    result.dates.forEach(function (dateStr) {
+                        var isActive = (dateStr === currentViewingDate) ? ' active' : '';
+                        html += '<div class="history-item' + isActive + '" onclick="loadHistoryReport(\'' + dateStr + '\')">';
+                        html += '<div class="history-item-dot"></div>';
+                        html += '<div class="history-item-date">' + dateStr + '</div>';
+                        html += '</div>';
+                    });
+                    listEl.innerHTML = html;
                 });
-                listEl.innerHTML = html;
-            });
+            } else {
+                // Web mode: fetch from history/ directory
+                fetch('./history/available-dates.json').then(function (r) { return r.json(); }).then(function (data) {
+                    var dates = data.dates || [];
+                    if (dates.length === 0) {
+                        listEl.innerHTML = '<div class="history-empty">暂无历史复盘记录</div>';
+                        return;
+                    }
+                    var html = '';
+                    dates.reverse().forEach(function (dateStr) {
+                        var isActive = (dateStr === currentViewingDate) ? ' active' : '';
+                        html += '<div class="history-item' + isActive + '" onclick="loadHistoryReport(\'' + dateStr + '\')">';
+                        html += '<div class="history-item-dot"></div>';
+                        html += '<div class="history-item-date">' + dateStr + '</div>';
+                        html += '</div>';
+                    });
+                    listEl.innerHTML = html;
+                }).catch(function () {
+                    listEl.innerHTML = '<div class="history-empty">暂无历史复盘记录</div>';
+                });
+            }
         }
 
         function loadHistoryReport(dateStr) {
-            if (!isElectron) return;
-            window.electronAPI.loadHistory(dateStr).then(function (result) {
-                if (result.success) {
+            if (isElectron) {
+                window.electronAPI.loadHistory(dateStr).then(function (result) {
+                    if (result.success) {
+                        currentViewingDate = dateStr;
+                        appData = result.data;
+                        renderAll(result.data);
+                        updateDateNavUI();
+                        document.querySelectorAll('.m-value').forEach(flashElement);
+                        document.querySelectorAll('.history-item').forEach(function (item) {
+                            var dateEl = item.querySelector('.history-item-date');
+                            item.classList.toggle('active', dateEl && dateEl.textContent === dateStr);
+                        });
+                        showToast('已加载 ' + dateStr + ' 的复盘数据', 'success');
+                    } else {
+                        showToast('加载失败: ' + result.error, 'error');
+                    }
+                });
+            } else {
+                // Web mode: fetch from history/ directory
+                fetch('./history/' + dateStr + '.json').then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                }).then(function (data) {
                     currentViewingDate = dateStr;
-                    appData = result.data;
-                    renderAll(result.data);
+                    appData = data;
+                    renderAll(data);
                     updateDateNavUI();
-                    document.querySelectorAll('.m-value').forEach(flashElement);
-                    // Update active state in history list
                     document.querySelectorAll('.history-item').forEach(function (item) {
                         var dateEl = item.querySelector('.history-item-date');
                         item.classList.toggle('active', dateEl && dateEl.textContent === dateStr);
                     });
                     showToast('已加载 ' + dateStr + ' 的复盘数据', 'success');
-                } else {
-                    showToast('加载失败: ' + result.error, 'error');
-                }
-            });
+                }).catch(function (err) {
+                    showToast('加载失败: ' + err.message, 'error');
+                });
+            }
         }
 
         // ══════════════════
@@ -1883,15 +1919,21 @@
         var availableDates = [];   // sorted oldest → newest
 
         function refreshAvailableDates() {
-            if (!isElectron) {
-                availableDates = [];
-                return;
+            if (isElectron) {
+                return window.electronAPI.listHistory().then(function (result) {
+                    availableDates = (result.success && result.dates) ? result.dates.slice().reverse() : [];
+                    updateDateNavUI();
+                });
+            } else {
+                // Web mode: fetch available-dates.json
+                return fetch('./history/available-dates.json').then(function (r) { return r.json(); }).then(function (data) {
+                    availableDates = (data.dates || []).slice().reverse();
+                    updateDateNavUI();
+                }).catch(function () {
+                    availableDates = [];
+                    updateDateNavUI();
+                });
             }
-            return window.electronAPI.listHistory().then(function (result) {
-                availableDates = (result.success && result.dates) ? result.dates.slice().reverse() : [];  // oldest first
-                // Re-update navigation button states now that dates are loaded
-                updateDateNavUI();
-            });
         }
 
         // ── Helper: get date from meta, supporting both meta.date and meta.trade_date ──
