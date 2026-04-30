@@ -1943,7 +1943,7 @@
         }
 
         function switchDay(direction) {
-            // direction: -1 = previous day, +1 = next day
+            // ◀ = direction+1 = 去更晚日期, ▶ = direction-1 = 去更早日期
             var currentDate = currentViewingDate || getMetaDate(appData);
             if (!currentDate || availableDates.length === 0) {
                 showToast('无历史数据', 'info');
@@ -1951,9 +1951,14 @@
             }
             var idx = availableDates.indexOf(currentDate);
             if (idx === -1) {
-                // Current date not in history, try to find nearest
-                // Maybe it's today's unsaved data — treat as the latest
+                // Current date not in history, try nearest
+                if (direction === 1 && availableDates.length > 0) {
+                    // ◀: go to next later date
+                    loadHistoryReport(availableDates[0]);
+                    return;
+                }
                 if (direction === -1 && availableDates.length > 0) {
+                    // ▶: go to next earlier date
                     loadHistoryReport(availableDates[availableDates.length - 1]);
                     return;
                 }
@@ -1961,13 +1966,14 @@
                 return;
             }
             var newIdx = idx + direction;
-            if (newIdx < 0 || newIdx >= availableDates.length) {
-                if (newIdx >= availableDates.length) {
-                    // Go back to today's live data
-                    goToToday();
-                    return;
-                }
+            if (newIdx < 0) {
+                // ▶ at earliest: already at the oldest record
                 showToast('已经是最早的记录', 'info');
+                return;
+            }
+            if (newIdx >= availableDates.length) {
+                // ◀ at latest: go to today
+                goToToday();
                 return;
             }
             loadHistoryReport(availableDates[newIdx]);
@@ -2010,12 +2016,12 @@
 
             var idx = currentDate ? availableDates.indexOf(currentDate) : -1;
 
-            // Prev: disabled if viewing earliest history date
-            if (prevBtn) prevBtn.disabled = (idx === 0) || (idx === -1 && !currentViewingDate);
-            // Next: disabled if already at latest or viewing today
-            if (nextBtn) nextBtn.disabled = (idx === availableDates.length - 1) || (idx === -1 && !currentViewingDate);
-            // Today: disabled if already viewing today
-            if (todayBtn) todayBtn.disabled = (currentViewingDate === null);
+            // ◀ (btnPrevDay) = switchDay(1) = 去更晚日期 → 在最后一天禁用
+            if (prevBtn) prevBtn.disabled = (idx === availableDates.length - 1) || (idx === -1 && !currentViewingDate);
+            // ▶ (btnNextDay) = switchDay(-1) = 去更早日期 → 在第一天禁用
+            if (nextBtn) nextBtn.disabled = (idx === 0) || (idx === -1 && !currentViewingDate);
+            // Today: disabled if already viewing the latest date
+            if (todayBtn) todayBtn.disabled = (idx === availableDates.length - 1);
         }
 
         // ══════════════════
