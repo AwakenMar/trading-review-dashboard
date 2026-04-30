@@ -2624,6 +2624,18 @@
             var data = adaptData(rawData);
             // Keep adapted data in appData so switchDay/updateDateNavUI can read meta.date
             appData = data;
+
+            // Safety: ensure all required sections exist
+            if (!data.marketOverview) data.marketOverview = {};
+            if (!data.marketOverview.indices) data.marketOverview.indices = [];
+            if (!data.marketOverview.sentiment) data.marketOverview.sentiment = [];
+            if (!data.marketOverview.mainlines) data.marketOverview.mainlines = [];
+            if (!data.marketOverview.topTier) data.marketOverview.topTier = [];
+            if (!data.marketOverview.lossDetector) data.marketOverview.lossDetector = { rows: [], alert: '' };
+            if (!data.marketOverview.emotionCycle) data.marketOverview.emotionCycle = '暂无数据';
+            if (!data.logicCheck) data.logicCheck = {};
+            if (!data.tradePlan) data.tradePlan = {};
+
             var de = document.getElementById('review-date'); if (de && data.meta) { var od = de.textContent; de.textContent = data.meta.date; if (od !== data.meta.date) flashElement(de); }
             renderIndices(data.marketOverview.indices);
             renderSentiment(data.marketOverview.sentiment);
