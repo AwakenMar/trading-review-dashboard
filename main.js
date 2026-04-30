@@ -127,6 +127,10 @@ function createWindow() {
 
     mainWindow.loadFile('index.html');
 
+    // 禁用渲染缓存，确保 index.html 更新即时生效
+    mainWindow.webContents.session.clearCache(function () {});
+    mainWindow.webContents.session.clearStorageData({ storages: ['cache'] });
+
     mainWindow.once('ready-to-show', function () {
         mainWindow.show();
     });
@@ -173,7 +177,7 @@ function registerIpc() {
                     }
                 }
                 // Return empty template if no data.json found
-                return { success: true, data: { meta: { date: new Date().toISOString().split('T')[0], version: '3.2', mode: '交互式交易终端', title: 'Alpha-Q 3.2' }, marketOverview: { indices: [], sentiment: [], emotionCycle: '等待数据推送...', mainlines: [], topTier: [], lossDetector: { rows: [], alert: '' } }, logicCheck: { errorRecall: '', logicRows: [], correction: '' }, tradePlan: { strategy: '等待数据推送...', guideRows: [], actionRows: [], avoidList: [], conclusion: '' }, deepAnalysis: {} } };
+                return { success: true, data: { meta: { date: new Date().toISOString().split('T')[0], version: '3.3', mode: '交互式交易终端', title: 'Alpha-Q 3.3' }, marketOverview: { indices: [], sentiment: [], emotionCycle: '等待数据推送...', mainlines: [], topTier: [], lossDetector: { rows: [], alert: '' } }, logicCheck: { errorRecall: '', logicRows: [], correction: '' }, tradePlan: { strategy: '等待数据推送...', guideRows: [], actionRows: [], avoidList: [], conclusion: '' }, deepAnalysis: {} } };
             }
             var raw = fs.readFileSync(dataPath, 'utf-8');
             return { success: true, data: JSON.parse(raw) };
@@ -248,6 +252,78 @@ function registerIpc() {
     ipcMain.handle('get-api-port', function () {
         return API_PORT;
     });
+
+    // ── Chart: Fetch stock minutes chart image via Node.js (bypass browser CORS) ──
+    ipcMain.handle('fetch-chart', function (_event, code) {
+        return new Promise(function (resolve) {
+            var prefix = (code.charAt(0) === '6') ? 'sh' : 'sz';
+            var url = 'https://image.sinajs.cn/newchart/min/' + prefix + code + '.gif?t=' + Date.now();
+            console.log('[Chart] Fetching:', url);
+
+            var resolved = false;
+            function done(result) {
+                if (resolved) return;
+                resolved = true;
+                console.log('[Chart] Result:', result.success ? 'OK (' + (result.data ? result.data.length : 0) + ' chars)' : 'FAIL: ' + result.error);
+                resolve(result);
+            }
+
+            var https = require('https');
+            var http = require('http');
+
+            // Try HTTPS first, fall back to HTTP
+            function tryFetch(fetchUrl, proto) {
+                var lib = (proto === 'https') ? https : http;
+                lib.get(fetchUrl, function (res) {
+                    if (res.statusCode === 301 || res.statusCode === 302) {
+                        var redirectUrl = res.headers.location;
+                        if (redirectUrl) {
+                            res.resume();
+                            console.log('[Chart] Redirect:', res.statusCode, '→', redirectUrl);
+                            var nextProto = redirectUrl.startsWith('https') ? 'https' : 'http';
+                            tryFetch(redirectUrl, nextProto);
+                            return;
+                        }
+                    }
+                    if (res.statusCode !== 200) {
+                        res.resume();
+                        // If HTTPS fails, try HTTP
+                        if (proto === 'https') {
+                            var httpUrl = fetchUrl.replace('https://', 'http://');
+                            console.log('[Chart] HTTPS failed (' + res.statusCode + '), trying HTTP:', httpUrl);
+                            tryFetch(httpUrl, 'http');
+                            return;
+                        }
+                        done({ success: false, error: 'HTTP ' + res.statusCode });
+                        return;
+                    }
+                    var chunks = [];
+                    res.on('data', function (chunk) { chunks.push(chunk); });
+                    res.on('end', function () {
+                        var buffer = Buffer.concat(chunks);
+                        var base64 = 'data:image/gif;base64,' + buffer.toString('base64');
+                        done({ success: true, data: base64 });
+                    });
+                }).on('error', function (err) {
+                    // If HTTPS errors, try HTTP
+                    if (proto === 'https') {
+                        var httpUrl = fetchUrl.replace('https://', 'http://');
+                        console.log('[Chart] HTTPS error (' + err.message + '), trying HTTP:', httpUrl);
+                        tryFetch(httpUrl, 'http');
+                        return;
+                    }
+                    done({ success: false, error: err.message });
+                });
+            }
+
+            tryFetch(url, 'https');
+
+            // 10 second timeout
+            setTimeout(function () {
+                done({ success: false, error: 'timeout' });
+            }, 10000);
+        });
+    });
 }
 
 // ── File Watcher: Auto-reload when data.json changes ──
@@ -301,7 +377,7 @@ function startApiServer() {
             var statusInfo = {
                 success: true,
                 service: 'Alpha-Q Terminal API',
-                version: '3.2',
+                version: '3.3',
                 port: API_PORT,
                 dataPath: getDataPath(),
                 historyDir: getHistoryDir(),
@@ -334,7 +410,7 @@ function startApiServer() {
 
                     // Write to history directory
                     var dir = ensureHistoryDir();
-                    var dateStr = data.meta.date || new Date().toISOString().split('T')[0];
+                    var dateStr = data.meta.date || data.meta.trade_date || new Date().toISOString().split('T')[0];
                     var historyPath = path.join(dir, dateStr + '.json');
                     fs.writeFileSync(historyPath, JSON.stringify(data, null, 2), 'utf-8');
                     console.log('[API] History saved:', historyPath);

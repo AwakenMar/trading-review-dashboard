@@ -40,7 +40,7 @@
 | `/earnings` | `/earnings [公司名] [财报核心数据]` | 财报预期差分析 |
 | `/report` | `/report` | 生成今日收盘复盘并推送到 Alpha-Q Terminal |
 
-# 收盘复盘输出规范（Alpha-Q Terminal v3.2）
+# 收盘复盘输出规范（Alpha-Q Terminal v3.3）
 
 当用户发送 `/report` 或「生成今日复盘」时，你必须：
 
@@ -50,13 +50,16 @@
 
 ## JSON Schema
 
+> ⚠️ **必须严格按照以下 Schema 输出，字段名不能自行更改！**
+> Alpha-Q Terminal 会按照这些字段名解析数据，字段名不一致将导致界面空白。
+
 ```json
 {
   "meta": {
     "date": "YYYY-MM-DD",
-    "version": "2.1",
+    "version": "3.3",
     "mode": "交互式交易终端",
-    "title": "Alpha-Q 2.1"
+    "title": "Alpha-Q 3.3"
   },
   "marketOverview": {
     "indices": [
@@ -155,7 +158,10 @@ Alpha-Q Terminal 收到数据后会自动刷新界面，无需手动操作。
 - **所有数值必须基于真实数据，禁止编造**
 - **deepAnalysis** 只包含核心标的（3-5只），与 topTier 中的标的保持一致
 - 涨停用红色表示（中国A股惯例），跌停用绿色
+- ⚠️ **字段名严格性**：不要自创字段名！必须使用 `indices`、`sentiment`、`mainlines`、`topTier`、`lossDetector`、`logicCheck`、`tradePlan`，不要用 `mainThemes`、`coreStocks`、`riskAlerts`、`nextDayPlan` 等替代名
 ```
+
+> **兼容说明**：Alpha-Q v3.3 内置了数据适配层，如果你之前使用的旧版 Prompt 产出了 `mainThemes`/`coreStocks`/`riskAlerts`/`nextDayPlan` 等替代字段名，终端仍能自动转换并正确显示。但为了最佳体验，请按上方 Schema 输出标准格式。
 
 ---
 
@@ -245,7 +251,7 @@ curl -X POST http://127.0.0.1:18901/api/update-data -H "Content-Type: applicatio
 {
   "success": true,
   "service": "Alpha-Q Terminal API",
-  "version": "3.2",
+  "version": "3.3",
   "port": 18901,
   "dataPath": "...",
   "historyDir": "...",
@@ -256,6 +262,57 @@ curl -X POST http://127.0.0.1:18901/api/update-data -H "Content-Type: applicatio
 ### POST /api/push-report
 
 `/api/update-data` 的别名，功能完全相同。
+
+---
+
+## QwenPaw MCP 对接方案（推荐）
+
+Alpha-Q 自带 MCP Bridge Server，可以在 QwenPaw 中一键配置，让 Agent 自动调用推送工具。
+
+### 配置步骤
+
+1. 打开 QwenPaw → 进入 **智能体 → MCP**
+2. 点击 **+ 创建**
+3. 粘贴以下 JSON 配置：
+
+```json
+{
+  "mcpServers": {
+    "alpha-q": {
+      "command": "node",
+      "args": ["C:/Users/96584.TUF-GAMING/WorkBuddy/20260428223711/mcp-bridge/index.js"]
+    }
+  }
+}
+```
+
+> ⚠️ 路径根据 Alpha-Q 安装位置调整。如果打包安装到 `F:\Alpha-Q\`，路径应为：
+> `F:/Alpha-Q/Alpha-Q Terminal/resources/mcp-bridge/index.js`
+
+4. 点击 **创建**，状态变为 🟢 启用即可
+
+### 可用工具
+
+配置成功后，Agent 会获得以下两个工具：
+
+| 工具名 | 说明 | 参数 |
+|--------|------|------|
+| `push_report` | 将复盘数据推送到 Alpha-Q Terminal | `data`（JSON 字符串，必须包含 meta 和 marketOverview） |
+| `check_status` | 检查 Alpha-Q API 是否在线 | 无 |
+
+### 使用示例
+
+在 QwenPaw 中对 Agent 说：
+- `生成今日复盘` — Agent 生成 JSON 后自动调用 push_report 推送
+- `检查 Alpha-Q 状态` — Agent 调用 check_status 确认连接
+
+### 工作流程
+
+```
+QwenPaw Agent → 调用 push_report 工具 → MCP Bridge (stdio) → HTTP POST → Alpha-Q Terminal API
+                                                                    ↓
+                                                              界面自动刷新 + Toast 通知
+```
 
 ---
 

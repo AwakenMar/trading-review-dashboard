@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALPHA-Q 3.2 // 交互式交易终端</title>
+    <title>ALPHA-Q 3.4 // 交互式交易终端</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════
-           INTERACTIVE FINANCIAL TERMINAL THEME v3.0
-           ELECTRON DESKTOP + WEB COMPATIBLE
+           INTERACTIVE FINANCIAL TERMINAL THEME v3.4
+           TRADINGVIEW / BLOOMBERG PROFESSIONAL GRADE
            ═══════════════════════════════════════════ */
         :root {
             /* ── Core Palette ── */
@@ -17,6 +20,7 @@
             --bg-hover:      #21262D;
             --border:        #30363D;
             --border-subtle: #21262D;
+            --glass:         rgba(22,27,34,0.85);
 
             /* ── Text Hierarchy ── */
             --text-primary:   #E6EDF3;
@@ -38,11 +42,12 @@
             --blue-bg:        rgba(88,166,255,0.08);
             --cyan-bright:    #39D2C0;
             --purple-bright:  #BC8CFF;
+            --neon-blue:      #00E5FF;
 
             /* ── Spacing & Radius ── */
             --radius:    12px;
             --radius-sm: 6px;
-            --gap:       1.25rem;
+            --gap:       1.5rem;
             --drawer-width: 420px;
 
             /* ── Layout ── */
@@ -53,13 +58,14 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.65;
             -webkit-font-smoothing: antialiased;
             overflow: hidden;
             height: 100vh;
+            font-size: 13px;
         }
 
         /* ── Scrollbar ── */
@@ -128,13 +134,20 @@
         }
 
         .titlebar-center .status-dot {
-            width: 5px;
-            height: 5px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--green-bright);
             display: inline-block;
             margin-right: 0.25rem;
-            animation: pulse-dot 2s ease-in-out infinite;
+            animation: pulse-live 2s ease-in-out infinite;
+            box-shadow: 0 0 4px var(--green-bright), 0 0 8px rgba(63,185,80,0.4);
+        }
+
+        @keyframes pulse-live {
+            0% { box-shadow: 0 0 4px var(--green-bright), 0 0 8px rgba(63,185,80,0.4); opacity: 1; }
+            50% { box-shadow: 0 0 8px var(--green-bright), 0 0 20px rgba(63,185,80,0.6); opacity: 0.7; }
+            100% { box-shadow: 0 0 4px var(--green-bright), 0 0 8px rgba(63,185,80,0.4); opacity: 1; }
         }
 
         .titlebar-clock {
@@ -206,7 +219,9 @@
         /* ── Left Sidebar Navigation ── */
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--bg-card);
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
@@ -214,6 +229,7 @@
             padding: 1rem 0;
             flex-shrink: 0;
             gap: 0.25rem;
+            z-index: 10;
         }
 
         .sidebar-btn {
@@ -265,8 +281,9 @@
             top: 8px;
             bottom: 8px;
             width: 2px;
-            background: var(--blue-bright);
+            background: var(--neon-blue);
             border-radius: 1px;
+            box-shadow: 0 0 6px var(--neon-blue), 0 0 12px rgba(0,229,255,0.3);
         }
 
         .sidebar-spacer {
@@ -480,8 +497,8 @@
         }
 
         .container {
-            max-width: 1400px;
-            padding: 1.5rem 2rem 3rem;
+            max-width: 100%;
+            padding: 2rem 2.5rem 4rem;
         }
 
         /* ══════════════════
@@ -491,16 +508,31 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 1.75rem;
+            padding: 2rem;
             margin-bottom: var(--gap);
-            transition: border-color 0.3s ease-in-out, transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-            will-change: transform;
+            transition: border-color 0.3s ease-in-out, box-shadow 0.4s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ── Card top shimmer line ── */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(88,166,255,0.15) 50%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
         }
 
         .card:hover {
             border-color: #3D444D;
-            transform: scale(1.015);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(88,166,255,0.06);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.25), 0 0 0 1px rgba(88,166,255,0.04);
+        }
+
+        .card:hover::before {
+            opacity: 1;
         }
 
         .card-head {
@@ -586,10 +618,10 @@
         }
 
         /* ── A-Share convention: 涨红跌绿 ── */
-        .tag-green  { background: var(--red-bg);     color: var(--red-bright);    border-color: rgba(248,81,73,0.2); }
-        .tag-red    { background: var(--green-bg);   color: var(--green-bright);  border-color: rgba(63,185,80,0.2); }
-        .tag-amber  { background: var(--amber-bg);   color: var(--amber-bright);  border-color: rgba(210,153,34,0.2); }
-        .tag-blue   { background: var(--blue-bg);    color: var(--blue-bright);   border-color: rgba(88,166,255,0.2); }
+        .tag-green  { background: var(--red-bg);     color: var(--red-bright);    border-color: rgba(248,81,73,0.25); }
+        .tag-red    { background: var(--green-bg);   color: var(--green-bright);  border-color: rgba(63,185,80,0.25); }
+        .tag-amber  { background: var(--amber-bg);   color: var(--amber-bright);  border-color: rgba(210,153,34,0.25); }
+        .tag-blue   { background: var(--blue-bg);    color: var(--blue-bright);   border-color: rgba(88,166,255,0.25); }
 
         /* ══════════════════
            TABLE SYSTEM
@@ -642,33 +674,66 @@
         .tbl tbody tr {
             cursor: pointer;
             transition: background 0.15s ease;
+            position: relative;
+        }
+
+        .tbl tbody tr:hover td {
+            background: rgba(33,38,45,0.6);
+            color: var(--text-primary);
         }
 
         .tbl tbody tr.row-selected td {
-            background: rgba(88,166,255,0.10);
+            background: rgba(0,229,255,0.06);
             color: var(--text-primary);
         }
 
         .tbl tbody tr.row-selected:hover td {
-            background: rgba(88,166,255,0.15);
+            background: rgba(0,229,255,0.10);
         }
 
         .tbl tbody tr.row-selected td:first-child {
-            box-shadow: inset 3px 0 0 var(--blue-bright);
+            box-shadow: inset 3px 0 0 var(--neon-blue);
         }
 
         .stock-code {
-            color: var(--cyan-bright);
+            display: inline-flex;
+            align-items: center;
+            color: #20c997;
             cursor: pointer;
             transition: all 0.2s ease;
-            border-bottom: 1px dashed rgba(57,210,192,0.3);
-            padding-bottom: 1px;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            background: transparent;
+            border: 1px solid #20c997;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            text-shadow: 0 0 8px rgba(32,201,151,0.3);
         }
 
         .stock-code:hover {
             color: #fff;
-            border-bottom-color: var(--cyan-bright);
-            text-shadow: 0 0 6px rgba(57,210,192,0.4);
+            background: rgba(32,201,151,0.1);
+            border-color: #20c997;
+            box-shadow: 0 0 12px rgba(32,201,151,0.3);
+        }
+
+        /* ── Inline stock badge in descriptions ── */
+        .stock-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.05rem 0.35rem;
+            border-radius: 3px;
+            background: transparent;
+            border: 1px solid rgba(32,201,151,0.5);
+            color: #20c997;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
         }
 
         /* ══════════════════
@@ -683,14 +748,31 @@
 
         .metric-cell {
             background: var(--bg-primary);
-            border: 1px solid var(--border-subtle);
+            border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            padding: 1.25rem 1rem;
+            padding: 1.4rem 1.15rem 1rem;
             text-align: center;
-            transition: border-color 0.3s ease-in-out;
+            transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            position: relative;
+            overflow: hidden;
         }
 
-        .metric-cell:hover { border-color: var(--border); }
+        .metric-cell:hover {
+            border-color: rgba(88,166,255,0.3);
+            box-shadow: 0 0 12px rgba(88,166,255,0.06);
+        }
+
+        /* ── Sparkline canvas placeholder ── */
+        .metric-cell .sparkline-wrap {
+            height: 24px;
+            margin-top: 0.5rem;
+            position: relative;
+        }
+        .metric-cell .sparkline-wrap canvas {
+            width: 100%;
+            height: 24px;
+            display: block;
+        }
 
         .metric-cell .m-label {
             font-size: 0.65rem;
@@ -702,10 +784,11 @@
         }
 
         .metric-cell .m-value {
-            font-size: 1.65rem;
-            font-weight: 700;
+            font-size: 1.8rem;
+            font-weight: 800;
             font-variant-numeric: tabular-nums;
-            line-height: 1.2;
+            line-height: 1.1;
+            letter-spacing: -0.5px;
         }
 
         .metric-cell .m-sub {
@@ -725,15 +808,19 @@
            ══════════════════ */
         .track-item {
             background: var(--bg-primary);
-            border: 1px solid var(--border-subtle);
+            border: 1px solid var(--border);
             border-left: 3px solid var(--red-bright);
             border-radius: var(--radius-sm);
-            padding: 1.25rem;
+            padding: 1.35rem;
             margin-bottom: 0.75rem;
-            transition: background 0.3s ease-in-out, border-color 0.3s ease-in-out;
+            transition: all 0.3s ease-in-out;
         }
 
-        .track-item:hover { background: var(--bg-hover); }
+        .track-item:hover {
+            background: rgba(33,38,45,0.6);
+            border-color: rgba(88,166,255,0.15);
+            border-left-color: var(--red-bright);
+        }
         .track-item.retreat  { border-left-color: var(--green-bright); }
         .track-item.rotating { border-left-color: var(--amber-bright); }
 
@@ -761,36 +848,131 @@
             align-items: center;
             gap: 1rem;
             background: var(--bg-primary);
-            border: 1px solid var(--border-subtle);
+            border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 1rem 1.25rem;
             margin-bottom: 0.6rem;
-            transition: border-color 0.3s ease-in-out, background 0.3s ease-in-out;
+            transition: all 0.25s ease-in-out;
+            position: relative;
+            overflow: hidden;
         }
 
-        .tier-row:hover { border-color: var(--border); background: var(--bg-hover); }
+        /* ── Neon hover highlight bar ── */
+        .tier-row::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 0;
+            background: var(--neon-blue);
+            box-shadow: 0 0 8px var(--neon-blue), 0 0 16px rgba(0,229,255,0.3);
+            transition: width 0.25s ease-in-out;
+            border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+        }
 
-        .tier-num { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; }
-        .tier-1 { background: #F0B429; color: #0D1117; }
-        .tier-2 { background: #8B949E; color: #0D1117; }
-        .tier-3 { background: #A06B25; color: #0D1117; }
+        .tier-row:hover {
+            border-color: rgba(0,229,255,0.2);
+            background: rgba(33,38,45,0.8);
+        }
+
+        .tier-row:hover::before {
+            width: 4px;
+        }
+
+        /* ── Rank blocks: Gold / Silver / Bronze gradients + 3D ── */
+        .tier-num {
+            width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 4px;
+            font-size: 0.72rem; font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            flex-shrink: 0;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.3);
+            transition: box-shadow 0.3s ease;
+        }
+        .tier-1 {
+            background: linear-gradient(135deg, #FFD700, #F0B429, #E5A100);
+            color: #0D1117;
+            font-size: 0.82rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .tier-2 {
+            background: linear-gradient(135deg, #E8E8E8, #B0B0B0, #8B949E);
+            color: #0D1117;
+        }
+        .tier-3 {
+            background: linear-gradient(135deg, #D4956A, #A06B25, #8B5E20);
+            color: #0D1117;
+        }
+
+        /* ── Rank 1 Pulse: Gold Breathing ── */
+        @keyframes gold-breathing {
+            0%, 100% { box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 0 5px rgba(255,215,0,0.4); }
+            50% { box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 0 20px rgba(255,215,0,0.8); }
+        }
+        .tier-num.rank-top-pulse {
+            animation: gold-breathing 2s ease-in-out infinite;
+        }
 
         .tier-info { flex: 1; }
-        .tier-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
-        .tier-desc { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.15rem; }
+        .tier-name {
+            font-size: 0.82rem; font-weight: 600; color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .tier-desc { font-size: 0.68rem; color: #6E7681; margin-top: 0.15rem; }
 
-        .tier-chip { font-size: 0.62rem; padding: 0.15rem 0.5rem; background: var(--blue-bg); border: 1px solid rgba(88,166,255,0.15); border-radius: 3px; color: var(--blue-bright); letter-spacing: 0.3px; white-space: nowrap; }
+        .tier-chip {
+            font-size: 0.62rem; padding: 0.15rem 0.5rem;
+            background: var(--blue-bg); border: 1px solid rgba(88,166,255,0.15);
+            border-radius: 3px; color: var(--blue-bright);
+            letter-spacing: 0.3px; white-space: nowrap;
+            font-family: 'JetBrains Mono', monospace;
+        }
 
         /* ══════════════════
            ALERT / INSIGHT / CONCLUSION
            ══════════════════ */
-        .alert-panel { background: var(--red-bg); border: 1px solid rgba(248,81,73,0.25); border-radius: var(--radius-sm); padding: 1.15rem 1.25rem; margin-top: 1.25rem; }
-        .alert-panel .alert-head { font-size: 0.75rem; font-weight: 700; color: var(--red-bright); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+        .alert-panel {
+            background: var(--red-bg);
+            border: 1px solid rgba(248,81,73,0.25);
+            border-radius: var(--radius-sm);
+            padding: 1.15rem 1.25rem;
+            margin-top: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ── 45° diagonal stripes ── */
+        .alert-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 8px,
+                rgba(248,81,73,0.04) 8px,
+                rgba(248,81,73,0.04) 9px
+            );
+            pointer-events: none;
+        }
+
+        .alert-panel .alert-head {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--red-bright);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            position: relative;
+        }
         .alert-panel .alert-head::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--red-bright); animation: pulse-dot 1.5s ease-in-out infinite; }
-        .alert-panel p, .alert-panel li { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
+        .alert-panel p, .alert-panel li { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; letter-spacing: 0.5px; position: relative; }
         .alert-panel strong { color: var(--red-bright); }
         .alert-panel ul { list-style: none; margin-top: 0.5rem; }
-        .alert-panel li { padding: 0.3rem 0; padding-left: 1.25rem; position: relative; }
+        .alert-panel li { padding: 0.3rem 0; padding-left: 1.25rem; position: relative; letter-spacing: 0.5px; }
         .alert-panel li::before { content: '\00D7'; position: absolute; left: 0; color: var(--red-bright); font-weight: 700; }
 
         .insight-box { background: var(--amber-bg); border: 1px solid rgba(210,153,34,0.2); border-radius: var(--radius-sm); padding: 1.15rem 1.25rem; margin-top: 1.25rem; }
@@ -798,33 +980,65 @@
         .insight-box p { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
         .insight-box strong { color: var(--text-primary); }
 
-        .conclusion-panel { background: linear-gradient(135deg, rgba(88,166,255,0.06) 0%, rgba(57,210,192,0.06) 100%); border: 1px solid rgba(88,166,255,0.2); border-radius: var(--radius); padding: 1.75rem; margin-bottom: var(--gap); }
-        .conclusion-panel .card-label { color: var(--cyan-bright); margin-bottom: 1rem; }
+        .conclusion-panel {
+            background: linear-gradient(135deg, rgba(0,229,255,0.04) 0%, rgba(57,210,192,0.04) 100%);
+            border: 1px solid rgba(0,229,255,0.15);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: var(--gap);
+            position: relative;
+            overflow: hidden;
+        }
+        .conclusion-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,229,255,0.3), transparent);
+        }
+        .conclusion-panel .card-label { color: var(--neon-blue); margin-bottom: 1rem; }
         .conclusion-panel p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.85; }
-        .conclusion-panel strong { color: var(--cyan-bright); }
+        .conclusion-panel strong { color: var(--neon-blue); }
 
         /* ══════════════════
            DRAWER
            ══════════════════ */
         .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out; }
         .drawer-overlay.open { opacity: 1; pointer-events: auto; }
-        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: var(--drawer-width); max-width: 90vw; background: var(--bg-card); border-left: 1px solid var(--border); z-index: 201; transform: translateX(100%); transition: transform 0.3s ease-in-out; overflow-y: auto; display: flex; flex-direction: column; }
+        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: var(--drawer-width); max-width: 90vw; background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-left: 1px solid var(--border); z-index: 201; transform: translateX(100%); transition: transform 0.3s ease-in-out; overflow-y: auto; display: flex; flex-direction: column; }
         .drawer.open { transform: translateX(0); }
-        .drawer-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        .drawer-title { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; }
+        @keyframes pulse-loading {
+            0%, 100% { background: var(--glass); box-shadow: 0 0 0 rgba(99,179,237,0); }
+            50% { background: #161b22; box-shadow: 0 0 18px rgba(99,179,237,0.15), inset 0 0 12px rgba(99,179,237,0.05); }
+        }
+        .drawer.pulse-loading { animation: pulse-loading 1.5s ease-in-out infinite; }
+        .drawer-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: baseline; flex-shrink: 0; }
+        .drawer-title { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.82rem; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; }
+        .drawer-title-code { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; color: #63B3ED; letter-spacing: -0.5px; }
+        .drawer-title-name { font-size: 16px; font-weight: 600; color: #63B3ED; margin-left: 4px; }
+        .drawer-title-suffix { font-size: 13px; font-weight: 400; color: var(--text-muted); opacity: 0.5; margin-left: 2px; }
         .drawer-close { background: none; border: 1px solid var(--border); color: var(--text-muted); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease-in-out; }
         .drawer-close:hover { border-color: var(--text-secondary); color: var(--text-primary); background: var(--bg-hover); }
         .drawer-body { padding: 1.5rem; flex: 1; }
         .drawer-section { margin-bottom: 1.5rem; }
         .drawer-section:last-child { margin-bottom: 0; }
-        .drawer-section-title { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle); }
-        .drawer-kv { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; font-size: 0.78rem; }
-        .drawer-kv .dk-label { color: var(--text-muted); }
-        .drawer-kv .dk-value { color: var(--text-primary); font-weight: 600; }
-        .drawer-kv .dk-value.pos { color: var(--green-bright); }
-        .drawer-kv .dk-value.neg { color: var(--red-bright); }
-        .drawer-text { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.75; }
-        .drawer-text strong { color: var(--text-primary); }
+        .drawer-section-title { font-size: 0.65rem; font-weight: 700; color: #94A3B8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle); }
+        /* 基础信息网格布局 */
+        .drawer-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 20px; background: rgba(13,17,23,0.4); border-radius: 8px; }
+        .drawer-info-cell { display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #1A202C; border-radius: 6px; }
+        .drawer-info-label { font-size: 11px; color: #CBD5E1; font-weight: 400; letter-spacing: 0.5px; }
+        .drawer-info-value { font-size: 16px; color: #FFFFFF; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .drawer-info-value.pos { color: var(--green-bright); }
+        .drawer-info-value.neg { color: var(--red-bright); }
+        /* 分时图容器 — 纯图片方案 */
+        .drawer-chart-slot { height: 260px; background: #0d1117; border-radius: 8px; margin-top: 12px; border: 1px solid #30363d; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
+        .drawer-chart-slot img { width: 100%; height: 100%; object-fit: contain; filter: invert(0.9) hue-rotate(180deg) brightness(1.1); pointer-events: none; }
+        /* 卡片化文本 */
+        .drawer-text-card { background: #161b22; padding: 12px; border-radius: 8px; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.75; }
+        .drawer-text-card strong { color: var(--text-primary); }
+        /* 空状态 */
+        .drawer-empty { font-size: 0.78rem; color: #484f58; font-style: italic; display: flex; align-items: center; gap: 6px; background: #161b22; padding: 12px; border-radius: 8px; }
+        .drawer-empty svg { width: 16px; height: 16px; fill: #30363d; flex-shrink: 0; }
         .drawer-tag { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 3px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.3px; }
         .drawer-tag-logic { background: var(--blue-bg); color: var(--blue-bright); }
         .drawer-tag-risk  { background: var(--red-bg); color: var(--red-bright); }
@@ -839,7 +1053,9 @@
             left: var(--sidebar-width);
             bottom: 0;
             width: 260px;
-            background: var(--bg-card);
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-right: 1px solid var(--border);
             z-index: 150;
             transform: translateX(-100%);
@@ -1027,6 +1243,7 @@
            ══════════════════ */
         @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes flash-number { 0% { opacity: 1; } 25% { opacity: 0.3; } 50% { opacity: 1; } 75% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes glow-border { 0%, 100% { box-shadow: 0 0 4px rgba(0,229,255,0.1); } 50% { box-shadow: 0 0 12px rgba(0,229,255,0.2); } }
         .flash { animation: flash-number 0.6s ease-in-out; }
 
         .toast-container { position: fixed; top: 50px; right: 1.5rem; z-index: 300; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -1060,7 +1277,7 @@
         <div class="titlebar-brand">
             <div class="titlebar-logo">&alpha;</div>
             <span class="titlebar-name">ALPHA-Q</span>
-            <span class="titlebar-version">v3.2</span>
+            <span class="titlebar-version">v3.4</span>
         </div>
         <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
@@ -1151,7 +1368,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="meta">逻辑深度复盘 · v3.2 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <p class="meta">逻辑深度复盘 · v3.3 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
@@ -1435,24 +1652,128 @@
         function openDrawer(code) {
             var data = (appData && appData.deepAnalysis) ? appData.deepAnalysis[code] : null;
             if (!data) { showToast('未找到 ' + code + ' 的深度数据', 'error'); return; }
-            document.getElementById('drawerTitle').textContent = data.code + ' ' + data.name + ' \u00B7 深度分析';
+            // 标题美化：代码 JetBrains Mono 24px + 名称 + 深度分析 0.5透明度
+            document.getElementById('drawerTitle').innerHTML =
+                '<span class="drawer-title-code">' + data.code + '</span>' +
+                '<span class="drawer-title-name">' + data.name + '</span>' +
+                '<span class="drawer-title-suffix">· 深度分析</span>';
+            var emptyIcon = '<svg viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg>';
             var h = '';
-            h += '<div class="drawer-section"><div class="drawer-section-title">基本信息</div>';
-            h += '<div class="drawer-kv"><span class="dk-label">标的代码</span><span class="dk-value">' + data.code + '</span></div>';
-            h += '<div class="drawer-kv"><span class="dk-label">标的名称</span><span class="dk-value">' + data.name + '</span></div>';
-            h += '<div class="drawer-kv"><span class="dk-label">所属板块</span><span class="dk-value">' + data.sector + '</span></div>';
-            h += '<div class="drawer-kv"><span class="dk-label">最新价</span><span class="dk-value">' + data.price + '</span></div>';
-            h += '<div class="drawer-kv"><span class="dk-label">涨跌幅</span><span class="dk-value ' + (data.change.charAt(0) === '+' ? 'pos' : 'neg') + '">' + data.change + '</span></div>';
-            h += '<div class="drawer-kv"><span class="dk-label">连板</span><span class="dk-value">' + data.board + '</span></div>';
-            h += '<div class="drawer-kv"><span class="dk-label">成交额</span><span class="dk-value">' + data.volume + '</span></div>';
-            h += '<div class="drawer-kv"><span class="dk-label">换手率</span><span class="dk-value">' + data.turnover + '</span></div></div>';
-            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-logic">逻辑</span></div><p class="drawer-text">' + data.logic + '</p></div>';
-            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-risk">风险</span></div><p class="drawer-text">' + data.risk + '</p></div>';
-            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-action">操作建议</span></div><p class="drawer-text">' + data.action + '</p></div>';
+            // 基础信息 — 网格布局
+            h += '<div class="drawer-section"><div class="drawer-section-title">基础信息</div>';
+            h += '<div class="drawer-info-grid">';
+            h += '<div class="drawer-info-cell"><span class="drawer-info-label">标的代码</span><span class="drawer-info-value">' + data.code + '</span></div>';
+            h += '<div class="drawer-info-cell"><span class="drawer-info-label">标的名称</span><span class="drawer-info-value" style="font-family:inherit">' + data.name + '</span></div>';
+            h += '<div class="drawer-info-cell"><span class="drawer-info-label">所属板块</span><span class="drawer-info-value" style="font-family:inherit;font-size:14px">' + (data.sector || '--') + '</span></div>';
+            if (data.price && data.price !== '--') {
+                h += '<div class="drawer-info-cell"><span class="drawer-info-label">最新价</span><span class="drawer-info-value">' + data.price + '</span></div>';
+            }
+            if (data.change && data.change !== '--') {
+                h += '<div class="drawer-info-cell"><span class="drawer-info-label">涨跌幅</span><span class="drawer-info-value ' + (data.change.charAt(0) === '+' ? 'pos' : 'neg') + '">' + data.change + '</span></div>';
+            }
+            if (data.board && data.board !== '--') {
+                h += '<div class="drawer-info-cell"><span class="drawer-info-label">连板</span><span class="drawer-info-value">' + data.board + '</span></div>';
+            }
+            if (data.volume && data.volume !== '--') {
+                h += '<div class="drawer-info-cell"><span class="drawer-info-label">成交额</span><span class="drawer-info-value" style="font-size:14px">' + data.volume + '</span></div>';
+            }
+            if (data.turnover && data.turnover !== '--') {
+                h += '<div class="drawer-info-cell"><span class="drawer-info-label">换手率</span><span class="drawer-info-value">' + data.turnover + '</span></div>';
+            }
+            h += '</div>';
+            // 分时图插槽
+            h += '<div class="drawer-chart-slot" id="stock-chart-box"></div>';
+            h += '</div>';
+            // 逻辑/风险/建议 — 卡片化 + 空状态
+            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-logic">逻辑</span></div>';
+            h += (data.logic && data.logic !== '暂无') ? '<p class="drawer-text-card">' + data.logic + '</p>' : '<div class="drawer-empty">' + emptyIcon + '暂无逻辑分析</div>';
+            h += '</div>';
+            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-risk">风险</span></div>';
+            h += (data.risk && data.risk !== '暂无' && data.risk !== '暂无风险提示') ? '<p class="drawer-text-card">' + data.risk + '</p>' : '<div class="drawer-empty">' + emptyIcon + '暂无风险提示</div>';
+            h += '</div>';
+            h += '<div class="drawer-section"><div class="drawer-section-title"><span class="drawer-tag drawer-tag-action">操作建议</span></div>';
+            h += (data.action && data.action !== '暂无' && data.action !== '暂无操作建议') ? '<p class="drawer-text-card">' + data.action + '</p>' : '<div class="drawer-empty">' + emptyIcon + '暂无操作建议</div>';
+            h += '</div>';
             document.getElementById('drawerBody').innerHTML = h;
             document.getElementById('drawer').classList.add('open');
             document.getElementById('drawerOverlay').classList.add('open');
+            updateMinutesChart(data.code);
         }
+
+        var _chartTimeout = null;
+
+        // 生成分时图URL：自动判断市场前缀 + 时间戳防缓存
+        function getChartUrl(code) {
+            var prefix = (code.charAt(0) === '6') ? 'sh' : 'sz';
+            return 'https://image.sinajs.cn/newchart/min/' + prefix + code + '.gif?t=' + Date.now();
+        }
+
+        function updateMinutesChart(code) {
+            var box = document.getElementById('stock-chart-box');
+            var drawer = document.getElementById('drawer');
+            if (!box) return;
+            if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
+
+            // 判断是否为支持的A股代码
+            var first = code.charAt(0);
+            if (first !== '6' && first !== '0' && first !== '3') {
+                box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">暂不支持该市场</div>';
+                return;
+            }
+
+            drawer.classList.add('pulse-loading');
+
+            // 优先走IPC（主进程Node.js下载，绕过浏览器跨域限制）
+            if (window.electronAPI && window.electronAPI.fetchChart) {
+                _chartTimeout = setTimeout(function () {
+                    drawer.classList.remove('pulse-loading');
+                    _chartTimeout = null;
+                    box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#D29922;font-size:12px;letter-spacing:0.5px">行情同步超时</div>';
+                }, 10000);
+
+                window.electronAPI.fetchChart(code).then(function (result) {
+                    if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
+                    drawer.classList.remove('pulse-loading');
+                    if (result && result.success && result.data) {
+                        box.innerHTML = '<img src="' + result.data + '" style="width:100%;height:100%;object-fit:contain;filter:invert(0.9) hue-rotate(180deg) brightness(1.1);pointer-events:none">';
+                    } else {
+                        var errMsg = (result && result.error) ? result.error : '未知错误';
+                        console.warn('[Chart] IPC fetch failed:', errMsg);
+                        box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用 (' + errMsg + ')</div>';
+                    }
+                }).catch(function (err) {
+                    if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
+                    drawer.classList.remove('pulse-loading');
+                    console.error('[Chart] IPC exception:', err);
+                    box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用 (IPC异常)</div>';
+                });
+                return;
+            }
+
+            // 降级：Web模式直接加载图片
+            var url = getChartUrl(code);
+            var img = new Image();
+            img.onload = function () {
+                drawer.classList.remove('pulse-loading');
+                if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
+            };
+            img.onerror = function () {
+                drawer.classList.remove('pulse-loading');
+                if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
+                box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用</div>';
+            };
+            img.src = url;
+            box.innerHTML = '';
+            box.appendChild(img);
+
+            _chartTimeout = setTimeout(function () {
+                drawer.classList.remove('pulse-loading');
+                _chartTimeout = null;
+                if (img.parentNode) {
+                    img.parentNode.removeChild(img);
+                    box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#D29922;font-size:12px;letter-spacing:0.5px">行情同步超时</div>';
+                }
+            }, 10000);        }
 
         function closeDrawer() {
             document.getElementById('drawer').classList.remove('open');
@@ -1568,12 +1889,20 @@
             }
             return window.electronAPI.listHistory().then(function (result) {
                 availableDates = (result.success && result.dates) ? result.dates.slice().reverse() : [];  // oldest first
+                // Re-update navigation button states now that dates are loaded
+                updateDateNavUI();
             });
+        }
+
+        // ── Helper: get date from meta, supporting both meta.date and meta.trade_date ──
+        function getMetaDate(data) {
+            if (!data || !data.meta) return null;
+            return data.meta.date || data.meta.trade_date || null;
         }
 
         function switchDay(direction) {
             // direction: -1 = previous day, +1 = next day
-            var currentDate = currentViewingDate || (appData && appData.meta ? appData.meta.date : null);
+            var currentDate = currentViewingDate || getMetaDate(appData);
             if (!currentDate || availableDates.length === 0) {
                 showToast('无历史数据', 'info');
                 return;
@@ -1611,10 +1940,10 @@
         function updateDateNavUI() {
             var de = document.getElementById('review-date');
             if (de && appData && appData.meta) {
-                de.textContent = appData.meta.date;
+                de.textContent = getMetaDate(appData);
             }
             // Update prev/next button states
-            var currentDate = currentViewingDate || (appData && appData.meta ? appData.meta.date : null);
+            var currentDate = currentViewingDate || getMetaDate(appData);
             var prevBtn = document.getElementById('btnPrevDay');
             var nextBtn = document.getElementById('btnNextDay');
             var todayBtn = document.getElementById('btnToday');
@@ -1835,16 +2164,341 @@
         // ══════════════════
         //  RENDER FUNCTIONS
         // ══════════════════
+        // ═══════════════════════════════════════════
+        //  DATA ADAPTER — Normalize QwenPaw output to render format
+        //  QwenPaw may push data in varying schemas depending on
+        //  the agent prompt version. This adapter detects the format
+        //  and normalizes it so renderAll() always gets what it expects.
+        // ═══════════════════════════════════════════
+        function adaptData(raw) {
+            if (!raw || !raw.marketOverview) return raw;
+
+            var d = JSON.parse(JSON.stringify(raw)); // deep clone
+            var mo = d.marketOverview;
+
+            // ── meta.date: support trade_date ──
+            if (d.meta && !d.meta.date && d.meta.trade_date) {
+                d.meta.date = d.meta.trade_date;
+            }
+
+            // ── marketOverview.indices ──
+            // QwenPaw may not provide indices; synthesize from available data
+            if (!mo.indices || mo.indices.length === 0) {
+                mo.indices = [];
+                if (mo.limitUpCount !== undefined) {
+                    mo.indices.push({ label: '涨停', value: String(mo.limitUpCount) + ' 家', type: 'pos', note: mo.brokenCount ? '炸 ' + mo.brokenCount + ' 家' : '' });
+                }
+                if (mo.limitDownCount !== undefined) {
+                    mo.indices.push({ label: '跌停', value: String(mo.limitDownCount) + ' 家', type: 'neg', note: '' });
+                }
+                if (mo.emotionScore !== undefined) {
+                    mo.indices.push({ label: '情绪评分', value: String(mo.emotionScore), type: mo.emotionScore >= 60 ? 'pos' : 'neg', note: '/100' });
+                }
+                if (mo.totalVolume) {
+                    mo.indices.push({ label: '量能', value: mo.totalVolume, type: 'neu', note: '' });
+                }
+            }
+
+            // ── marketOverview.sentiment ──
+            // QwenPaw may not provide sentiment rows; synthesize from flat fields
+            if (!mo.sentiment || mo.sentiment.length === 0) {
+                mo.sentiment = [];
+                if (mo.limitUpCount !== undefined) {
+                    mo.sentiment.push({ dim: '涨停', data: mo.limitUpCount + ' 家', conclusion: mo.limitUpCount >= 80 ? '情绪活跃' : '情绪一般' });
+                }
+                if (mo.limitDownCount !== undefined) {
+                    mo.sentiment.push({ dim: '跌停', data: mo.limitDownCount + ' 家', conclusion: mo.limitDownCount > 20 ? '亏钱效应扩散' : '可控', type: mo.limitDownCount > 20 ? 'neg' : undefined });
+                }
+                if (mo.brokenCount !== undefined || mo.brokenRate !== undefined) {
+                    mo.sentiment.push({ dim: '炸板率', data: (mo.brokenRate !== undefined ? mo.brokenRate + '%' : mo.brokenCount + ' 家'), conclusion: (mo.brokenRate || 0) > 30 ? '炸板率高，接力谨慎' : '炸板率正常' });
+                }
+                if (mo.maxConsecutive !== undefined) {
+                    mo.sentiment.push({ dim: '连板高度', data: mo.maxConsecutive + ' 板', conclusion: mo.maxConsecutive >= 5 ? '高度拓展' : '高度受限' });
+                }
+                if (mo.marketSummary) {
+                    // Don't add as a row, but it's available
+                }
+            }
+
+            // ── marketOverview.mainlines ← mainThemes ──
+            if ((!mo.mainlines || mo.mainlines.length === 0) && d.mainThemes && d.mainThemes.length > 0) {
+                mo.mainlines = d.mainThemes.map(function (t) {
+                    var indicator = 'green'; // default = 确立
+                    var statusType = 'green';
+                    if (t.strength === '次主线' || t.strength === '辅助方向') { indicator = 'amber'; statusType = 'amber'; }
+                    if (t.strength === '分歧方向' || t.trend === '分歧') { indicator = 'red'; statusType = 'red'; }
+                    if (t.trend === '退潮') { indicator = 'red'; statusType = 'red'; }
+                    var body = t.description || '';
+                    if (t.coreStocks && t.coreStocks.length > 0) {
+                        body += '<br><strong>核心标的：</strong>' + t.coreStocks.join('、');
+                    }
+                    return {
+                        title: (t.strength === '绝对主线' ? '主线' : (t.strength === '次主线' ? '次线' : '方向')) + '：' + t.name,
+                        status: t.strength + (t.count ? ' (' + t.count + '只)' : ''),
+                        statusType: statusType,
+                        indicator: indicator,
+                        body: body
+                    };
+                });
+                // Don't delete d.mainThemes yet — needed for deepAnalysis synthesis
+            }
+
+            // ── marketOverview.topTier ← coreStocks ──
+            // Also synthesize deepAnalysis from coreStocks BEFORE deleting it
+            if ((!mo.topTier || mo.topTier.length === 0) && d.coreStocks && d.coreStocks.length > 0) {
+                // First, synthesize deepAnalysis from coreStocks
+                if (!d.deepAnalysis) d.deepAnalysis = {};
+                d.coreStocks.forEach(function (s) {
+                    if (!s.code) return;
+                    var boardMatch = (s.status || '').match(/(\d+)连?板/);
+                    var boardNum = boardMatch ? boardMatch[1] : '--';
+                    var sector = s.position || '--';
+                    if (d.mainThemes) {
+                        for (var ti = 0; ti < d.mainThemes.length; ti++) {
+                            var themeStocks = d.mainThemes[ti].coreStocks || [];
+                            for (var si = 0; si < themeStocks.length; si++) {
+                                if (themeStocks[si].indexOf(s.code) >= 0 || themeStocks[si].indexOf(s.name) >= 0) {
+                                    sector = d.mainThemes[ti].name + ' · ' + (s.position || '');
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    d.deepAnalysis[s.code] = {
+                        code: s.code,
+                        name: s.name || '--',
+                        sector: sector,
+                        price: '--',
+                        change: '--',
+                        board: boardNum,
+                        volume: '--',
+                        turnover: '--',
+                        logic: s.logic || '暂无逻辑分析',
+                        risk: '暂无风险提示',
+                        action: '暂无操作建议'
+                    };
+                });
+                // Also add stocks from mainThemes.coreStocks (format: "名称(代码)")
+                if (d.mainThemes) {
+                    d.mainThemes.forEach(function (theme) {
+                        var tStocks = theme.coreStocks || [];
+                        tStocks.forEach(function (stockStr) {
+                            var m = stockStr.match(/\((\d{6})\)/);
+                            if (!m) return;
+                            var code = m[1];
+                            var name = stockStr.replace(/\(\d{6}\)/, '').trim();
+                            if (!d.deepAnalysis[code]) {
+                                d.deepAnalysis[code] = {
+                                    code: code,
+                                    name: name,
+                                    sector: theme.name || '--',
+                                    price: '--',
+                                    change: '--',
+                                    board: '--',
+                                    volume: '--',
+                                    turnover: '--',
+                                    logic: theme.description || '暂无逻辑分析',
+                                    risk: '暂无风险提示',
+                                    action: '暂无操作建议'
+                                };
+                            }
+                        });
+                    });
+                }
+
+                mo.topTier = d.coreStocks.map(function (s, i) {
+                    var tier = 1;
+                    if (s.position && s.position.indexOf('2板') >= 0) tier = 2;
+                    if (s.position && (s.position.indexOf('3板') >= 0 || s.position.indexOf('高度') >= 0)) tier = 3;
+                    return {
+                        rank: i + 1,
+                        tier: tier,
+                        code: s.code || '--',
+                        name: s.name || '--',
+                        desc: (s.status || '') + ' · ' + (s.position || ''),
+                        chip: s.logic || ''
+                    };
+                });
+                // Don't delete d.coreStocks yet — cleanup at end
+            }
+
+            // ── marketOverview.lossDetector ← riskAlerts ──
+            if ((!mo.lossDetector || !mo.lossDetector.rows || mo.lossDetector.rows.length === 0) && d.riskAlerts && d.riskAlerts.length > 0) {
+                mo.lossDetector = {
+                    rows: d.riskAlerts.map(function (r, i) {
+                        var parts = (r.stock || '').split(' ');
+                        var code = parts.length > 1 ? parts[0] : '--';
+                        var name = parts.length > 1 ? parts.slice(1).join(' ') : parts[0];
+                        var riskText = r.risk || '';
+                        // Try to extract change from risk text, e.g. "今日-10%跌停", "-9.8%"
+                        var changeMatch = riskText.match(/(-?\d+(?:\.\d+)?)%/);
+                        var change = changeMatch ? changeMatch[1] + '%' : '--';
+                        // Auto-detect risk type tag
+                        var tag = null;
+                        if (riskText.indexOf('跌停') >= 0) tag = '跌停';
+                        else if (riskText.indexOf('核按钮') >= 0 || riskText.indexOf('核') >= 0) tag = '核按钮';
+                        else if (riskText.indexOf('炸板') >= 0) tag = '炸板';
+                        else if (riskText.indexOf('开板') >= 0) tag = '开板';
+                        return {
+                            id: i + 1,
+                            code: code,
+                            name: name,
+                            change: change,
+                            feature: riskText,
+                            tag: tag
+                        };
+                    }),
+                    alert: d.riskAlerts.map(function (r) { return r.risk; }).join('<br>')
+                };
+                // Don't delete d.riskAlerts yet — cleanup at end
+            }
+
+            // ── Add risk alert stocks to deepAnalysis (or supplement existing) ──
+            if (!d.deepAnalysis) d.deepAnalysis = {};
+            if (mo.lossDetector && mo.lossDetector.rows) {
+                mo.lossDetector.rows.forEach(function (row) {
+                    if (row.code && row.code !== '--') {
+                        if (d.deepAnalysis[row.code]) {
+                            // Supplement existing entry with risk info
+                            d.deepAnalysis[row.code].risk = row.feature || d.deepAnalysis[row.code].risk;
+                            d.deepAnalysis[row.code].action = '回避';
+                            if (row.change !== '--') d.deepAnalysis[row.code].change = row.change;
+                        } else {
+                            // Create new entry for risk-only stock
+                            d.deepAnalysis[row.code] = {
+                                code: row.code,
+                                name: row.name || '--',
+                                sector: '负反馈标的',
+                                price: '--',
+                                change: row.change !== '--' ? row.change : '--',
+                                board: '--',
+                                volume: '--',
+                                turnover: '--',
+                                logic: row.feature || '暂无逻辑分析',
+                                risk: row.feature || '暂无风险提示',
+                                action: '回避'
+                            };
+                        }
+                    }
+                });
+            }
+
+            // ── logicCheck ← synthesize if missing ──
+            if (!d.logicCheck) {
+                d.logicCheck = { errorRecall: '暂无历史误判记录', logicRows: [], correction: '' };
+            }
+
+            // ── tradePlan ← nextDayPlan ──
+            if (!d.tradePlan && d.nextDayPlan) {
+                var np = d.nextDayPlan;
+                var guideRows = [];
+                if (np.stance) guideRows.push({ dim: '进攻/防守', suggest: np.stance });
+                if (np.strategy) guideRows.push({ dim: '操作模式', suggest: np.strategy });
+                if (np.avoid) guideRows.push({ dim: '回避方向', suggest: np.avoid, type: 'neg' });
+
+                var actionRows = [];
+                if (np.primaryTarget) {
+                    var pt = np.primaryTarget;
+                    actionRows.push({
+                        direction: pt.name + '（首选）',
+                        dirType: 'pos',
+                        target: pt.name + ' (' + pt.action + ')',
+                        code: pt.code || '--',
+                        trigger: pt.trigger || ''
+                    });
+                }
+                if (np.secondaryTarget) {
+                    var st = np.secondaryTarget;
+                    actionRows.push({
+                        direction: st.name + '（次选）',
+                        dirType: 'pos',
+                        target: st.name + ' (' + st.action + ')',
+                        code: st.code || '--',
+                        trigger: st.trigger || ''
+                    });
+                }
+
+                var avoidList = np.avoid ? np.avoid.split('/').map(function (s) { return s.trim(); }) : [];
+
+                d.tradePlan = {
+                    strategy: np.stance || '',
+                    guideRows: guideRows,
+                    actionRows: actionRows,
+                    avoidList: avoidList,
+                    conclusion: np.primaryTarget ? '首选 ' + np.primaryTarget.name + '，触发条件：' + np.primaryTarget.trigger : ''
+                };
+                delete d.nextDayPlan;
+            }
+
+            // ── Ensure deepAnalysis exists even if no coreStocks ──
+            if (!d.deepAnalysis) {
+                d.deepAnalysis = {};
+            }
+
+            // ── Cleanup: remove source fields that have been adapted ──
+            delete d.mainThemes;
+            delete d.coreStocks;
+            delete d.riskAlerts;
+
+            return d;
+        }
+
         function renderIndices(data) {
             var grid = document.getElementById('indices-grid'); if (!grid || !data) return; grid.innerHTML = '';
-            data.forEach(function (item) {
+            data.forEach(function (item, idx) {
                 var cell = document.createElement('div'); cell.className = 'metric-cell';
                 var tc = item.type === 'neg' ? 'm-neg' : (item.type === 'pos' ? 'm-pos' : 'm-neu');
                 var vh = item.value;
                 if (item.label === '成交额') { var p = item.value.split('万亿'); vh = p[0] + '<span style="font-size:0.85rem;font-weight:400;color:var(--text-muted)"> 万亿</span>'; }
-                cell.innerHTML = '<div class="m-label">' + item.label + '</div><div class="m-value ' + tc + '">' + vh + '</div><div class="m-sub" style="color:var(--text-muted)">' + item.note + '</div>';
+                var sparkColor = item.type === 'neg' ? 'rgba(63,185,80,0.4)' : (item.type === 'pos' ? 'rgba(248,81,73,0.4)' : 'rgba(88,166,255,0.25)');
+                cell.innerHTML = '<div class="m-label">' + item.label + '</div><div class="m-value ' + tc + '">' + vh + '</div><div class="m-sub" style="color:var(--text-muted)">' + item.note + '</div><div class="sparkline-wrap"><canvas id="spark-' + idx + '"></canvas></div>';
                 grid.appendChild(cell);
+                // Draw a mini sparkline for visual effect
+                setTimeout(function() { drawSparkline('spark-' + idx, sparkColor); }, 50);
             });
+        }
+
+        // ── Sparkline renderer ──
+        function drawSparkline(canvasId, color) {
+            var canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            var w = rect.width, h = rect.height;
+            // Generate a plausible mini sparkline from seed
+            var seed = canvasId.charCodeAt(canvasId.length - 1);
+            var points = [];
+            var val = 0.5 + (seed % 3) * 0.1;
+            for (var i = 0; i < 20; i++) {
+                val += (Math.sin(i * 0.8 + seed) * 0.08) + ((seed + i) % 5 - 2) * 0.02;
+                val = Math.max(0.15, Math.min(0.85, val));
+                points.push(val);
+            }
+            // Normalize
+            var min = Math.min.apply(null, points), max = Math.max.apply(null, points);
+            var range = max - min || 1;
+            ctx.beginPath();
+            points.forEach(function(p, i) {
+                var x = (i / (points.length - 1)) * w;
+                var y = h - ((p - min) / range) * (h * 0.7) - h * 0.1;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            // Fill gradient under
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            var grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, 'rgba(13,17,23,0)');
+            ctx.fillStyle = grad;
+            ctx.fill();
         }
 
         function renderSentiment(data) {
@@ -1873,7 +2527,8 @@
             var c = document.getElementById('top-tier-container'); if (!c || !data) return; c.innerHTML = '';
             data.forEach(function (item) {
                 var d = document.createElement('div'); d.className = 'tier-row';
-                d.innerHTML = '<div class="tier-num tier-' + item.tier + '">' + item.rank + '</div><div class="tier-info"><div class="tier-name"><span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.code + '</span> ' + item.name + '</div><div class="tier-desc">' + item.desc + '</div></div><div class="tier-chip">' + item.chip + '</div>';
+                var pulseClass = (item.rank === 1) ? ' rank-top-pulse' : '';
+                d.innerHTML = '<div class="tier-num tier-' + item.tier + pulseClass + '">' + item.rank + '</div><div class="tier-info"><div class="tier-name"><span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.code + '</span> ' + item.name + '</div><div class="tier-desc">' + item.desc + '</div></div><div class="tier-chip">' + item.chip + '</div>';
                 c.appendChild(d);
             });
         }
@@ -1908,8 +2563,11 @@
             var cn = document.getElementById('conclusion-text'); if (cn) cn.innerHTML = data.conclusion;
         }
 
-        function renderAll(data) {
-            if (!data) return;
+        function renderAll(rawData) {
+            if (!rawData) return;
+            var data = adaptData(rawData);
+            // Keep adapted data in appData so switchDay/updateDateNavUI can read meta.date
+            appData = data;
             var de = document.getElementById('review-date'); if (de && data.meta) { var od = de.textContent; de.textContent = data.meta.date; if (od !== data.meta.date) flashElement(de); }
             renderIndices(data.marketOverview.indices);
             renderSentiment(data.marketOverview.sentiment);

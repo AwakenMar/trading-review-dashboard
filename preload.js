@@ -36,5 +36,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('api-push-received', function (_event, info) {
             callback(info);
         });
-    }
+    },
+
+    // ── Chart: Fetch stock chart via main process ──
+    fetchChart: function (code) { return ipcRenderer.invoke('fetch-chart', code); }
 });

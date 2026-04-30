@@ -1,7 +1,7 @@
 {
   "name": "alpha-q-terminal",
-  "version": "3.2.0",
-  "description": "Alpha-Q 3.2 - 交互式交易复盘终端 (Electron Desktop + HTTP API)",
+  "version": "3.4.9",
+  "description": "Alpha-Q 3.4 - 交互式交易复盘终端 (TradingView/Bloomberg Pro UI)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -25,6 +25,14 @@
       {
         "from": "data.json",
         "to": "data.json"
+      },
+      {
+        "from": "mcp-bridge",
+        "to": "mcp-bridge",
+        "filter": [
+          "**/*",
+          "!node_modules/.cache"
+        ]
       }
     ],
     "win": {
