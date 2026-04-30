@@ -2483,17 +2483,9 @@
                     avoidList: avoidList,
                     conclusion: np.primaryTarget ? '首选 ' + np.primaryTarget.name + '，触发条件：' + np.primaryTarget.trigger : ''
                 };
-                delete d.nextDayPlan;
-            }
 
-            // ── Ensure deepAnalysis exists even if no coreStocks ──
-            if (!d.deepAnalysis) {
-                d.deepAnalysis = {};
-            }
-
-            // ── Enrich deepAnalysis with nextDayPlan action info ──
-            if (d.nextDayPlan) {
-                var np = d.nextDayPlan;
+                // ── Enrich deepAnalysis with nextDayPlan action info ──
+                if (!d.deepAnalysis) d.deepAnalysis = {};
                 ['primaryTarget', 'secondaryTarget'].forEach(function(key) {
                     var t = np[key];
                     if (!t || !t.code) return;
@@ -2519,6 +2511,13 @@
                         };
                     }
                 });
+
+                delete d.nextDayPlan;
+            }
+
+            // ── Ensure deepAnalysis exists even if no coreStocks ──
+            if (!d.deepAnalysis) {
+                d.deepAnalysis = {};
             }
 
             // ── Cleanup: remove source fields that have been adapted ──
