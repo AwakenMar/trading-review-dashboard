@@ -1927,7 +1927,7 @@
             } else {
                 // Web mode: fetch available-dates.json
                 return fetch('./history/available-dates.json').then(function (r) { return r.json(); }).then(function (data) {
-                    availableDates = (data.dates || []).slice().reverse();
+                    availableDates = (data.dates || []).slice();
                     updateDateNavUI();
                 }).catch(function () {
                     availableDates = [];
