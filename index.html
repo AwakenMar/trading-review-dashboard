@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════
-           INTERACTIVE FINANCIAL TERMINAL THEME v3.5
+           INTERACTIVE FINANCIAL TERMINAL THEME v3.5.1
            TRADINGVIEW / BLOOMBERG PROFESSIONAL GRADE
            ═══════════════════════════════════════════ */
         :root {
@@ -1020,11 +1020,14 @@
         .drawer-close { background: none; border: 1px solid var(--border); color: var(--text-muted); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease-in-out; }
         .drawer-close:hover { border-color: var(--text-secondary); color: var(--text-primary); background: var(--bg-hover); }
         .drawer-body { padding: 1.5rem; flex: 1; }
-        .drawer-section { margin-bottom: 1.5rem; }
-        .drawer-section:last-child { margin-bottom: 0; }
-        .drawer-section-title { font-size: 0.65rem; font-weight: 700; color: #94A3B8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle); }
+        .drawer-section { margin-bottom: 0; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); position: relative; }
+        .drawer-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+        .drawer-section::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--border) 15%, var(--neon-blue) 50%, var(--border) 85%, transparent); opacity: 0.35; }
+        .drawer-section:last-child::after { display: none; }
+        .drawer-section + .drawer-section { padding-top: 1.25rem; }
+        .drawer-section-title { font-size: 0.65rem; font-weight: 700; color: #94A3B8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
         /* 基础信息网格布局 */
-        .drawer-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 20px; background: rgba(13,17,23,0.4); border-radius: 8px; }
+        .drawer-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 20px; background: rgba(13,17,23,0.4); border-radius: 8px; border: 1px solid var(--border); }
         .drawer-info-cell { display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #1A202C; border-radius: 6px; }
         .drawer-info-label { font-size: 11px; color: #CBD5E1; font-weight: 400; letter-spacing: 0.5px; }
         .drawer-info-value { font-size: 16px; color: #FFFFFF; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
@@ -1034,10 +1037,10 @@
         .drawer-chart-slot { height: 260px; background: #0d1117; border-radius: 8px; margin-top: 12px; border: 1px solid #30363d; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
         .drawer-chart-slot img { width: 100%; height: 100%; object-fit: contain; filter: invert(0.9) hue-rotate(180deg) brightness(1.1); pointer-events: none; }
         /* 卡片化文本 */
-        .drawer-text-card { background: #161b22; padding: 12px; border-radius: 8px; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.75; }
+        .drawer-text-card { background: #161b22; padding: 12px; border-radius: 8px; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.75; border: 1px solid var(--border); }
         .drawer-text-card strong { color: var(--text-primary); }
         /* 空状态 */
-        .drawer-empty { font-size: 0.78rem; color: #484f58; font-style: italic; display: flex; align-items: center; gap: 6px; background: #161b22; padding: 12px; border-radius: 8px; }
+        .drawer-empty { font-size: 0.78rem; color: #484f58; font-style: italic; display: flex; align-items: center; gap: 6px; background: #161b22; padding: 12px; border-radius: 8px; border: 1px dashed var(--border); }
         .drawer-empty svg { width: 16px; height: 16px; fill: #30363d; flex-shrink: 0; }
         .drawer-tag { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 3px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.3px; }
         .drawer-tag-logic { background: var(--blue-bg); color: var(--blue-bright); }
@@ -1277,7 +1280,7 @@
         <div class="titlebar-brand">
             <div class="titlebar-logo">&alpha;</div>
             <span class="titlebar-name">ALPHA-Q</span>
-            <span class="titlebar-version">v3.5</span>
+            <span class="titlebar-version">v3.5.1</span>
         </div>
         <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
@@ -1368,7 +1371,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="meta">逻辑深度复盘 · v3.5 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <p class="meta">逻辑深度复盘 · v3.5.1 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
