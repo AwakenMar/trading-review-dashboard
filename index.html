@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════
-           INTERACTIVE FINANCIAL TERMINAL THEME v3.5.3
+           INTERACTIVE FINANCIAL TERMINAL THEME v3.5.4
            TRADINGVIEW / BLOOMBERG PROFESSIONAL GRADE
            ═══════════════════════════════════════════ */
         :root {
@@ -1280,7 +1280,7 @@
         <div class="titlebar-brand">
             <div class="titlebar-logo">&alpha;</div>
             <span class="titlebar-name">ALPHA-Q</span>
-            <span class="titlebar-version">v3.5.3</span>
+            <span class="titlebar-version">v3.5.4</span>
         </div>
         <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
@@ -1371,7 +1371,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="meta">逻辑深度复盘 · v3.5.3 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <p class="meta">逻辑深度复盘 · v3.5.4 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
@@ -2240,6 +2240,89 @@
                 d.meta.date = d.meta.trade_date;
             }
 
+            // ── Alias: risks → riskAlerts ──
+            if (!d.riskAlerts && d.risks) {
+                d.riskAlerts = d.risks.map(function(r) {
+                    return { stock: (r.code || '') + ' ' + (r.name || ''), risk: r.issue || '' };
+                });
+            }
+
+            // ── Alias: tomorrowPlan → nextDayPlan ──
+            if (!d.nextDayPlan && d.tomorrowPlan) {
+                var tp = d.tomorrowPlan;
+                var np = { stance: tp.strategy || '' };
+                if (tp.targets && tp.targets.length > 0) {
+                    np.primaryTarget = {
+                        name: tp.targets[0].name || '',
+                        code: tp.targets[0].code || '',
+                        action: tp.targets[0].action || '',
+                        trigger: tp.targets[0].trigger || '',
+                        cancel: tp.targets[0].cancel || '',
+                        position: tp.targets[0].position || ''
+                    };
+                    if (tp.targets.length > 1) {
+                        np.secondaryTarget = {
+                            name: tp.targets[1].name || '',
+                            code: tp.targets[1].code || '',
+                            action: tp.targets[1].action || '',
+                            trigger: tp.targets[1].trigger || '',
+                            cancel: tp.targets[1].cancel || '',
+                            position: tp.targets[1].position || ''
+                        };
+                    }
+                    // Store extra targets (3rd+) as avoid-style notes
+                    if (tp.targets.length > 2) {
+                        np.avoid = tp.targets.slice(2).map(function(t) {
+                            return t.name + '(' + t.action + '): ' + t.trigger;
+                        }).join(' / ');
+                    }
+                }
+                if (tp.avoid) np.avoid = (np.avoid ? np.avoid + ' / ' : '') + tp.avoid;
+                d.nextDayPlan = np;
+            }
+
+            // ── Normalize mainThemes[].coreStocks: string → array ──
+            if (d.mainThemes && d.mainThemes.length > 0) {
+                d.mainThemes.forEach(function(theme) {
+                    if (typeof theme.coreStocks === 'string') {
+                        theme.coreStocks = theme.coreStocks.split(/[,，、\s]+/).filter(function(s) { return s && s !== '无'; });
+                    }
+                    // Also handle strength: numeric → label
+                    if (typeof theme.strength === 'number') {
+                        if (theme.strength >= 10000) theme.strength = '绝对主线';
+                        else if (theme.strength >= 5000) theme.strength = '次主线';
+                        else theme.strength = '方向';
+                    }
+                    // Handle status field for indicator mapping
+                    if (theme.status === '退潮方向' || theme.status === '大出血' || theme.status === '系统性退潮') {
+                        theme.trend = '退潮';
+                    } else if (theme.status === '分化方向') {
+                        theme.trend = '分歧';
+                    }
+                });
+            }
+
+            // ── Normalize coreStocks: support boards/position/status fields ──
+            if (d.coreStocks && d.coreStocks.length > 0) {
+                d.coreStocks.forEach(function(s) {
+                    // boards → position
+                    if (!s.position && s.boards !== undefined) {
+                        s.position = s.boards + '板';
+                    }
+                    // status may contain board info
+                    if (!s.position && s.status) {
+                        var bm = s.status.match(/(\d+)板/);
+                        if (bm) s.position = bm[1] + '板';
+                        else s.position = s.status;
+                    }
+                });
+            }
+
+            // ── Alias: sentimentCycle → emotionCycle ──
+            if (!mo.emotionCycle && mo.sentimentCycle) {
+                mo.emotionCycle = mo.sentimentCycle;
+            }
+
             // ── marketOverview.indices ──
             // QwenPaw may not provide indices; synthesize from available data
             if (!mo.indices || mo.indices.length === 0) {
@@ -2250,8 +2333,9 @@
                 if (mo.limitDownCount !== undefined) {
                     mo.indices.push({ label: '跌停', value: String(mo.limitDownCount) + ' 家', type: 'neg', note: '' });
                 }
-                if (mo.emotionScore !== undefined) {
-                    mo.indices.push({ label: '情绪评分', value: String(mo.emotionScore), type: mo.emotionScore >= 60 ? 'pos' : 'neg', note: '/100' });
+                if (mo.emotionScore !== undefined || mo.sentimentScore !== undefined) {
+                    var score = mo.sentimentScore !== undefined ? mo.sentimentScore : mo.emotionScore;
+                    mo.indices.push({ label: '情绪评分', value: String(score), type: score >= 60 ? 'pos' : 'neg', note: '/100' });
                 }
                 if (mo.totalVolume) {
                     mo.indices.push({ label: '量能', value: mo.totalVolume, type: 'neu', note: '' });
@@ -2274,8 +2358,18 @@
                 if (mo.maxConsecutive !== undefined) {
                     mo.sentiment.push({ dim: '连板高度', data: mo.maxConsecutive + ' 板', conclusion: mo.maxConsecutive >= 5 ? '高度拓展' : '高度受限' });
                 }
-                if (mo.marketSummary) {
-                    // Don't add as a row, but it's available
+                if (mo.maxBoardHeight) {
+                    mo.sentiment.push({ dim: '连板高度', data: mo.maxBoardHeight, conclusion: '最高板' });
+                }
+                if (mo.sentimentScore !== undefined) {
+                    mo.sentiment.push({ dim: '情绪评分', data: mo.sentimentScore + ' 分', conclusion: mo.sentimentScore >= 60 ? '偏暖' : '偏冷', type: mo.sentimentScore >= 60 ? 'pos' : 'neg' });
+                }
+                if (mo.totalVolume) {
+                    mo.sentiment.push({ dim: '量能', data: mo.totalVolume, conclusion: '显著缩量' });
+                }
+                if (mo.shanghaiIndex) {
+                    var shChange = mo.shanghaiIndex.change || '';
+                    mo.sentiment.push({ dim: '上证指数', data: String(mo.shanghaiIndex.value) + ' ' + shChange, conclusion: shChange.indexOf('-') >= 0 ? '下跌' : '上涨', type: shChange.indexOf('-') >= 0 ? 'neg' : 'pos' });
                 }
             }
 
@@ -2284,17 +2378,26 @@
                 mo.mainlines = d.mainThemes.map(function (t) {
                     var indicator = 'green'; // default = 确立
                     var statusType = 'green';
-                    if (t.strength === '次主线' || t.strength === '辅助方向') { indicator = 'amber'; statusType = 'amber'; }
-                    if (t.strength === '分歧方向' || t.trend === '分歧') { indicator = 'red'; statusType = 'red'; }
-                    if (t.trend === '退潮') { indicator = 'red'; statusType = 'red'; }
+                    // Check both strength and status fields
+                    var strengthStr = String(t.strength || '');
+                    var statusStr = String(t.status || t.trend || '');
+                    if (strengthStr.indexOf('次主线') >= 0 || strengthStr.indexOf('辅助') >= 0 || statusStr.indexOf('次主线') >= 0) { indicator = 'amber'; statusType = 'amber'; }
+                    if (strengthStr.indexOf('分歧') >= 0 || statusStr.indexOf('分歧') >= 0) { indicator = 'amber'; statusType = 'amber'; }
+                    if (strengthStr.indexOf('退潮') >= 0 || statusStr.indexOf('退潮') >= 0 || statusStr.indexOf('大出血') >= 0 || statusStr.indexOf('系统性退潮') >= 0) { indicator = 'red'; statusType = 'red'; }
                     var body = t.description || '';
                     if (t.coreStocks && t.coreStocks.length > 0) {
                         var stockStrs = t.coreStocks.map(function(s) { return typeof s === 'string' ? s : (s.name || s.code || JSON.stringify(s)); });
                         body += '<br><strong>核心标的：</strong>' + stockStrs.join('、');
                     }
+                    var strengthLabel = strengthStr;
+                    if (strengthStr === '绝对主线') strengthLabel = '主线';
+                    else if (strengthStr === '次主线') strengthLabel = '次线';
+                    else if (!isNaN(parseInt(strengthStr))) strengthLabel = statusStr || '方向';
+                    else if (strengthStr) strengthLabel = strengthStr;
+                    else strengthLabel = '方向';
                     return {
-                        title: (t.strength === '绝对主线' ? '主线' : (t.strength === '次主线' ? '次线' : '方向')) + '：' + t.name,
-                        status: t.strength + (t.count ? ' (' + t.count + '只)' : ''),
+                        title: strengthLabel + '：' + t.name,
+                        status: (statusStr || strengthStr) + (t.count ? ' (' + t.count + ')' : ''),
                         statusType: statusType,
                         indicator: indicator,
                         body: body
@@ -2311,13 +2414,14 @@
                 d.coreStocks.forEach(function (s) {
                     if (!s.code) return;
                     var boardMatch = (s.status || '').match(/(\d+)连?板/);
-                    var boardNum = boardMatch ? boardMatch[1] : '--';
+                    var boardNum = boardMatch ? boardMatch[1] : (s.boards ? String(s.boards) : '--');
                     var sector = s.position || '--';
                     if (d.mainThemes) {
                         for (var ti = 0; ti < d.mainThemes.length; ti++) {
                             var themeStocks = d.mainThemes[ti].coreStocks || [];
                             for (var si = 0; si < themeStocks.length; si++) {
-                                if (themeStocks[si].indexOf(s.code) >= 0 || themeStocks[si].indexOf(s.name) >= 0) {
+                                var ts = String(themeStocks[si]);
+                                if (ts.indexOf(s.code) >= 0 || ts.indexOf(s.name) >= 0) {
                                     sector = d.mainThemes[ti].name + ' · ' + (s.position || '');
                                     break;
                                 }
