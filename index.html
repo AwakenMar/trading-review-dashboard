@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════
-           INTERACTIVE FINANCIAL TERMINAL THEME v3.5.2
+           INTERACTIVE FINANCIAL TERMINAL THEME v3.5.3
            TRADINGVIEW / BLOOMBERG PROFESSIONAL GRADE
            ═══════════════════════════════════════════ */
         :root {
@@ -1280,7 +1280,7 @@
         <div class="titlebar-brand">
             <div class="titlebar-logo">&alpha;</div>
             <span class="titlebar-name">ALPHA-Q</span>
-            <span class="titlebar-version">v3.5.2</span>
+            <span class="titlebar-version">v3.5.3</span>
         </div>
         <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
@@ -1371,7 +1371,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="meta">逻辑深度复盘 · v3.5.2 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <p class="meta">逻辑深度复盘 · v3.5.3 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
@@ -2289,7 +2289,8 @@
                     if (t.trend === '退潮') { indicator = 'red'; statusType = 'red'; }
                     var body = t.description || '';
                     if (t.coreStocks && t.coreStocks.length > 0) {
-                        body += '<br><strong>核心标的：</strong>' + t.coreStocks.join('、');
+                        var stockStrs = t.coreStocks.map(function(s) { return typeof s === 'string' ? s : (s.name || s.code || JSON.stringify(s)); });
+                        body += '<br><strong>核心标的：</strong>' + stockStrs.join('、');
                     }
                     return {
                         title: (t.strength === '绝对主线' ? '主线' : (t.strength === '次主线' ? '次线' : '方向')) + '：' + t.name,
@@ -2341,9 +2342,25 @@
                 if (d.mainThemes) {
                     d.mainThemes.forEach(function (theme) {
                         var tStocks = theme.coreStocks || [];
-                        tStocks.forEach(function (stockStr) {
+                        tStocks.forEach(function (stockEntry) {
+                            var stockStr = typeof stockEntry === 'string' ? stockEntry : (stockEntry.name || '');
+                            if (!stockStr) return;
                             var m = stockStr.match(/\((\d{6})\)/);
-                            if (!m) return;
+                            if (!m) {
+                                // Try extracting code from object format
+                                if (typeof stockEntry === 'object' && stockEntry.code) {
+                                    var code = stockEntry.code;
+                                    var name = stockEntry.name || code;
+                                    if (!d.deepAnalysis[code]) {
+                                        d.deepAnalysis[code] = {
+                                            code: code, name: name, sector: theme.name || '--',
+                                            price: '--', change: '--', board: '--', volume: '--', turnover: '--',
+                                            logic: theme.description || '暂无逻辑分析', risk: '暂无风险提示', action: '暂无操作建议'
+                                        };
+                                    }
+                                }
+                                return;
+                            }
                             var code = m[1];
                             var name = stockStr.replace(/\(\d{6}\)/, '').trim();
                             if (!d.deepAnalysis[code]) {
