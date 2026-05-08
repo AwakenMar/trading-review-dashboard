@@ -253,76 +253,63 @@ function registerIpc() {
         return API_PORT;
     });
 
-    // ── Chart: Fetch stock minutes chart image via Node.js (bypass browser CORS) ──
-    ipcMain.handle('fetch-chart', function (_event, code) {
+    // ── Chart: Fetch stock minutes data from Tencent API (新浪GIF接口已停服) ──
+    ipcMain.handle('fetch-chart-data', function (_event, fullCode) {
+        // fullCode format: "sh603045" or "sz000066"
         return new Promise(function (resolve) {
-            var prefix = (code.charAt(0) === '6') ? 'sh' : 'sz';
-            var url = 'https://image.sinajs.cn/newchart/min/' + prefix + code + '.gif?t=' + Date.now();
-            console.log('[Chart] Fetching:', url);
+            var url = 'https://web.ifzq.gtimg.cn/appstock/app/minute/query?_var=min_data&code=' + fullCode + '&t=' + Date.now();
+            console.log('[Chart] Fetching data:', url);
 
             var resolved = false;
             function done(result) {
                 if (resolved) return;
                 resolved = true;
-                console.log('[Chart] Result:', result.success ? 'OK (' + (result.data ? result.data.length : 0) + ' chars)' : 'FAIL: ' + result.error);
+                console.log('[Chart] Result:', result.success ? 'OK (' + (result.data && result.data.points ? result.data.points.length : 0) + ' points)' : 'FAIL: ' + result.error);
                 resolve(result);
             }
 
             var https = require('https');
-            var http = require('http');
 
-            // Try HTTPS first, fall back to HTTP
-            function tryFetch(fetchUrl, proto) {
-                var lib = (proto === 'https') ? https : http;
-                lib.get(fetchUrl, function (res) {
-                    if (res.statusCode === 301 || res.statusCode === 302) {
-                        var redirectUrl = res.headers.location;
-                        if (redirectUrl) {
-                            res.resume();
-                            console.log('[Chart] Redirect:', res.statusCode, '→', redirectUrl);
-                            var nextProto = redirectUrl.startsWith('https') ? 'https' : 'http';
-                            tryFetch(redirectUrl, nextProto);
+            https.get(url, function (res) {
+                if (res.statusCode !== 200) {
+                    res.resume();
+                    done({ success: false, error: 'HTTP ' + res.statusCode });
+                    return;
+                }
+                var chunks = [];
+                res.on('data', function (chunk) { chunks.push(chunk); });
+                res.on('end', function () {
+                    try {
+                        var text = Buffer.concat(chunks).toString('utf8');
+                        var jsonStr = text.replace('min_data=', '');
+                        var json = JSON.parse(jsonStr);
+                        var key = fullCode;
+                        var chartObj = json.data && json.data[key] && json.data[key].data;
+                        if (!chartObj || !chartObj.data || chartObj.data.length === 0) {
+                            done({ success: false, error: 'no data' });
                             return;
                         }
+                        var points = chartObj.data;
+                        var openPrice = parseFloat(points[0].split(' ')[1]);
+                        done({ success: true, data: { points: points, openPrice: openPrice } });
+                    } catch (e) {
+                        done({ success: false, error: e.message });
                     }
-                    if (res.statusCode !== 200) {
-                        res.resume();
-                        // If HTTPS fails, try HTTP
-                        if (proto === 'https') {
-                            var httpUrl = fetchUrl.replace('https://', 'http://');
-                            console.log('[Chart] HTTPS failed (' + res.statusCode + '), trying HTTP:', httpUrl);
-                            tryFetch(httpUrl, 'http');
-                            return;
-                        }
-                        done({ success: false, error: 'HTTP ' + res.statusCode });
-                        return;
-                    }
-                    var chunks = [];
-                    res.on('data', function (chunk) { chunks.push(chunk); });
-                    res.on('end', function () {
-                        var buffer = Buffer.concat(chunks);
-                        var base64 = 'data:image/gif;base64,' + buffer.toString('base64');
-                        done({ success: true, data: base64 });
-                    });
-                }).on('error', function (err) {
-                    // If HTTPS errors, try HTTP
-                    if (proto === 'https') {
-                        var httpUrl = fetchUrl.replace('https://', 'http://');
-                        console.log('[Chart] HTTPS error (' + err.message + '), trying HTTP:', httpUrl);
-                        tryFetch(httpUrl, 'http');
-                        return;
-                    }
-                    done({ success: false, error: err.message });
                 });
-            }
-
-            tryFetch(url, 'https');
+            }).on('error', function (err) {
+                done({ success: false, error: err.message });
+            });
 
             // 10 second timeout
             setTimeout(function () {
                 done({ success: false, error: 'timeout' });
             }, 10000);
         });
+    });
+
+    // ── Legacy: fetch-chart kept for backward compat (returns empty) ──
+    ipcMain.handle('fetch-chart', function (_event, code) {
+        return Promise.resolve({ success: false, error: 'deprecated' });
     });
 }
 

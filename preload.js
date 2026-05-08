@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         });
     },
 
-    // ── Chart: Fetch stock chart via main process ──
-    fetchChart: function (code) { return ipcRenderer.invoke('fetch-chart', code); }
+    // ── Chart: Fetch stock chart data via main process ──
+    fetchChart: function (code) { return ipcRenderer.invoke('fetch-chart', code); },
+    fetchChartData: function (fullCode) { return ipcRenderer.invoke('fetch-chart-data', fullCode); }
 });

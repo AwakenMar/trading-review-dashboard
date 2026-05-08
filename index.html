@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════
-           INTERACTIVE FINANCIAL TERMINAL THEME v3.5.4
+           INTERACTIVE FINANCIAL TERMINAL THEME v3.6.0
            TRADINGVIEW / BLOOMBERG PROFESSIONAL GRADE
            ═══════════════════════════════════════════ */
         :root {
@@ -1280,7 +1280,7 @@
         <div class="titlebar-brand">
             <div class="titlebar-logo">&alpha;</div>
             <span class="titlebar-name">ALPHA-Q</span>
-            <span class="titlebar-version">v3.5.4</span>
+            <span class="titlebar-version">v3.6.0</span>
         </div>
         <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
@@ -1371,7 +1371,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="meta">逻辑深度复盘 · v3.5.4 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <p class="meta">逻辑深度复盘 · v3.6.0 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
@@ -1705,10 +1705,114 @@
 
         var _chartTimeout = null;
 
-        // 生成分时图URL：自动判断市场前缀 + 时间戳防缓存
-        function getChartUrl(code) {
+        // 生成分时图腾讯数据URL：自动判断市场前缀
+        function getTencentChartUrl(code) {
             var prefix = (code.charAt(0) === '6') ? 'sh' : 'sz';
-            return 'https://image.sinajs.cn/newchart/min/' + prefix + code + '.gif?t=' + Date.now();
+            return 'https://web.ifzq.gtimg.cn/appstock/app/minute/query?_var=min_data&code=' + prefix + code + '&t=' + Date.now();
+        }
+
+        // 用Canvas绘制分时图
+        function drawMinuteChart(canvasId, chartData, openPrice) {
+            var canvas = document.getElementById(canvasId);
+            if (!canvas || !chartData || chartData.length === 0) return;
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            var w = rect.width, h = rect.height;
+            var pad = { top: 18, right: 45, bottom: 22, left: 5 };
+            var cw = w - pad.left - pad.right;
+            var ch = h - pad.top - pad.bottom;
+
+            // Parse prices
+            var prices = chartData.map(function(p) { return parseFloat(p.split(' ')[1]); });
+            var minP = Math.min.apply(null, prices);
+            var maxP = Math.max.apply(null, prices);
+            // Symmetric around open price
+            var dev = Math.max(Math.abs(maxP - openPrice), Math.abs(openPrice - minP)) * 1.1;
+            if (dev === 0) dev = 0.5;
+            var yHigh = openPrice + dev;
+            var yLow = openPrice - dev;
+
+            function xPos(i) { return pad.left + (i / (prices.length - 1)) * cw; }
+            function yPos(v) { return pad.top + ((yHigh - v) / (yHigh - yLow)) * ch; }
+
+            // Background
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, w, h);
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(48,54,61,0.5)';
+            ctx.lineWidth = 0.5;
+            [0, 0.25, 0.5, 0.75, 1].forEach(function(r) {
+                var y = pad.top + r * ch;
+                ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+            });
+
+            // Open price line (dashed)
+            ctx.strokeStyle = 'rgba(139,148,158,0.4)';
+            ctx.setLineDash([3, 3]);
+            var openY = yPos(openPrice);
+            ctx.beginPath(); ctx.moveTo(pad.left, openY); ctx.lineTo(pad.left + cw, openY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Area fill
+            var isUp = prices[prices.length - 1] >= openPrice;
+            var areaColor = isUp ? 'rgba(248,81,73,0.08)' : 'rgba(63,185,80,0.08)';
+            ctx.beginPath();
+            ctx.moveTo(xPos(0), yPos(prices[0]));
+            for (var i = 1; i < prices.length; i++) { ctx.lineTo(xPos(i), yPos(prices[i])); }
+            ctx.lineTo(xPos(prices.length - 1), pad.top + ch);
+            ctx.lineTo(xPos(0), pad.top + ch);
+            ctx.closePath();
+            ctx.fillStyle = areaColor;
+            ctx.fill();
+
+            // Line
+            var lineColor = isUp ? '#F85149' : '#3FB950';
+            ctx.beginPath();
+            ctx.moveTo(xPos(0), yPos(prices[0]));
+            for (var j = 1; j < prices.length; j++) { ctx.lineTo(xPos(j), yPos(prices[j])); }
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Current price dot
+            var lastX = xPos(prices.length - 1);
+            var lastY = yPos(prices[prices.length - 1]);
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = lineColor;
+            ctx.fill();
+
+            // Price labels on right
+            ctx.fillStyle = '#8B949E';
+            ctx.font = '10px JetBrains Mono, monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(yHigh.toFixed(2), pad.left + cw + 4, pad.top + 4);
+            ctx.fillText(openPrice.toFixed(2), pad.left + cw + 4, openY + 4);
+            ctx.fillText(yLow.toFixed(2), pad.left + cw + 4, pad.top + ch + 4);
+
+            // Time labels on bottom
+            ctx.fillStyle = '#484F58';
+            ctx.textAlign = 'center';
+            var timeLabels = ['9:30', '10:30', '11:30', '13:00', '14:00', '15:00'];
+            var timeIdxs = [0, 60, 120, 150, 210, 241];
+            timeIdxs.forEach(function(ti, li) {
+                if (ti < prices.length) {
+                    ctx.fillText(timeLabels[li], xPos(ti), h - 4);
+                }
+            });
+
+            // Change % label
+            var changePct = ((prices[prices.length - 1] - openPrice) / openPrice * 100).toFixed(2);
+            var changeColor = isUp ? '#F85149' : '#3FB950';
+            ctx.fillStyle = changeColor;
+            ctx.font = 'bold 11px JetBrains Mono, monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText((isUp ? '+' : '') + changePct + '%', w - 4, 14);
         }
 
         function updateMinutesChart(code) {
@@ -1726,57 +1830,63 @@
 
             drawer.classList.add('pulse-loading');
 
-            // 优先走IPC（主进程Node.js下载，绕过浏览器跨域限制）
-            if (window.electronAPI && window.electronAPI.fetchChart) {
+            // 使用腾讯分时数据接口（新浪GIF接口已停服）
+            var prefix = (code.charAt(0) === '6') ? 'sh' : 'sz';
+            var tencentUrl = 'https://web.ifzq.gtimg.cn/appstock/app/minute/query?_var=min_data&code=' + prefix + code + '&t=' + Date.now();
+
+            // Electron: 走IPC下载JSON（绕过CORS）
+            if (window.electronAPI && window.electronAPI.fetchChartData) {
                 _chartTimeout = setTimeout(function () {
                     drawer.classList.remove('pulse-loading');
                     _chartTimeout = null;
                     box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#D29922;font-size:12px;letter-spacing:0.5px">行情同步超时</div>';
                 }, 10000);
 
-                window.electronAPI.fetchChart(code).then(function (result) {
+                window.electronAPI.fetchChartData(prefix + code).then(function (result) {
                     if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
                     drawer.classList.remove('pulse-loading');
                     if (result && result.success && result.data) {
-                        box.innerHTML = '<img src="' + result.data + '" style="width:100%;height:100%;object-fit:contain;filter:invert(0.9) hue-rotate(180deg) brightness(1.1);pointer-events:none">';
+                        box.innerHTML = '<canvas id="minute-canvas" style="width:100%;height:100%"></canvas>';
+                        setTimeout(function() { drawMinuteChart('minute-canvas', result.data.points, result.data.openPrice); }, 30);
                     } else {
-                        var errMsg = (result && result.error) ? result.error : '未知错误';
-                        console.warn('[Chart] IPC fetch failed:', errMsg);
-                        box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用 (' + errMsg + ')</div>';
+                        box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用</div>';
                     }
-                }).catch(function (err) {
+                }).catch(function () {
                     if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
                     drawer.classList.remove('pulse-loading');
-                    console.error('[Chart] IPC exception:', err);
-                    box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用 (IPC异常)</div>';
+                    box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用</div>';
                 });
                 return;
             }
 
-            // 降级：Web模式直接加载图片
-            var url = getChartUrl(code);
-            var img = new Image();
-            img.onload = function () {
-                drawer.classList.remove('pulse-loading');
-                if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
-            };
-            img.onerror = function () {
-                drawer.classList.remove('pulse-loading');
-                if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
-                box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用</div>';
-            };
-            img.src = url;
-            box.innerHTML = '';
-            box.appendChild(img);
-
+            // Web模式：直接fetch（腾讯接口允许CORS）
             _chartTimeout = setTimeout(function () {
                 drawer.classList.remove('pulse-loading');
                 _chartTimeout = null;
-                if (img.parentNode) {
-                    img.parentNode.removeChild(img);
-                    box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#D29922;font-size:12px;letter-spacing:0.5px">行情同步超时</div>';
+                box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#D29922;font-size:12px;letter-spacing:0.5px">行情同步超时</div>';
+            }, 10000);
+
+            fetch(tencentUrl).then(function(r) { return r.text(); }).then(function(text) {
+                if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
+                drawer.classList.remove('pulse-loading');
+                var jsonStr = text.replace('min_data=', '');
+                var json = JSON.parse(jsonStr);
+                var key = prefix + code;
+                var chartObj = json.data && json.data[key] && json.data[key].data;
+                if (!chartObj || !chartObj.data || chartObj.data.length === 0) {
+                    box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">暂无分时数据</div>';
+                    return;
                 }
-            }, 10000);        }
+                var points = chartObj.data;
+                var openPrice = parseFloat(points[0].split(' ')[1]);
+                box.innerHTML = '<canvas id="minute-canvas" style="width:100%;height:100%"></canvas>';
+                setTimeout(function() { drawMinuteChart('minute-canvas', points, openPrice); }, 30);
+            }).catch(function(err) {
+                if (_chartTimeout) { clearTimeout(_chartTimeout); _chartTimeout = null; }
+                drawer.classList.remove('pulse-loading');
+                console.warn('[Chart] fetch error:', err);
+                box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#484f58;font-size:12px">行情数据暂不可用</div>';
+            });
 
         function closeDrawer() {
             document.getElementById('drawer').classList.remove('open');
