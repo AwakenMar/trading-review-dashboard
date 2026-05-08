@@ -14,14 +14,14 @@
 - gh CLI 已安装并登录 (路径: /c/Program Files/GitHub CLI)
 
 ## Design System
-- 风格: 彭博终端 / TradingView 深色金融终端 (v3.4 Professional Grade)
+- 风格: 彭博终端 / TradingView 深色金融终端 (v3.5.1 Professional Grade)
 - 主背景: #0D1117, 卡片: #161B22, 边框: #30363D, 玻璃: rgba(22,27,34,0.85)
 - **A股涨红跌绿配色**: 涨/正面→红(#F85149), 跌/负面→绿(#3FB950), 警告→琥珀(#D29922), 中性→蓝(#58A6FF), 霓虹→#00E5FF
 - 字体: JetBrains Mono (Google Fonts), 等宽数字 tabular-nums
 - 圆角: 12px, 表格无竖线
-- v3.4 UI 特性: 毛玻璃侧边栏(drawer/history/sidebar), 霓虹高亮条, Sparkline, 负反馈斜纹, LIVE脉冲灯
+- v3.5 UI 特性: 毛玻璃侧边栏(drawer/history/sidebar), 霓虹高亮条, Sparkline, 负反馈斜纹, LIVE脉冲灯, 霓虹渐变分割线
 
-## Tech Stack (v3.4.0 Electron Desktop + Web + HTTP API)
+## Tech Stack (v3.5.1 Electron Desktop + Web + HTTP API)
 - **双模架构**: Electron 桌面端 + Web 端共用同一 index.html
 - **Electron**: v33.4.11, contextIsolation:true, nodeIntegration:false
 - **打包**: electron-builder, nsis target (npm run build)
@@ -37,7 +37,7 @@
 - main.js: Electron 主进程, frameless 1280x800 窗口, 自定义标题栏
   - ELECTRON_RUN_AS_NODE guard: 自动检测并 re-spawn (用户环境 VS Code 集成终端会设置此变量)
   - HTTP API 服务器: startApiServer(), 端口自动递增
-- preload.js: contextBridge IPC 桥接 (minimize/maximize/close/readData/getDataPath/onDataUpdated/onApiPushReceived/getApiPort/listHistory/loadHistory)
+- preload.js: contextBridge IPC 桥接 (minimize/maximize/close/readData/getDataPath/onDataUpdated/onApiPushReceived/getApiPort/listHistory/loadHistory/fetchChart)
 - index.html: 自定义 titlebar + 左侧 sidebar (5板块锚点跳转) + 主内容区 (一页滚动6板块)
   - 壹·市场环境 → 贰·板块主线 → 叁·核心标的 → 肆·负反馈 → 伍·逻辑对账 → 陆·交易预案
   - 日期导航: ◀/▶ 切换历史复盘 + "今天" 回到实时
@@ -74,3 +74,4 @@
 - **最大化空白**: .container max-width 1400px 改为 100% (v3.3.2)
 - **跌幅列全显"--"**: riskAlerts 无跌幅字段 → 正则提取 + 风险标签自动检测 (v3.3.2)
 - **深度数据缺失**: QwenPaw 不推送 deepAnalysis → 从 coreStocks/mainThemes/riskAlerts 自动合成 (v3.3.2)
+- **侧边栏分界线不清楚**: drawer-section间仅margin间隔 → 添加border + 霓虹渐变分割线 + 卡片边框 (v3.5.1)

@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════
-           INTERACTIVE FINANCIAL TERMINAL THEME v3.5.1
+           INTERACTIVE FINANCIAL TERMINAL THEME v3.5.2
            TRADINGVIEW / BLOOMBERG PROFESSIONAL GRADE
            ═══════════════════════════════════════════ */
         :root {
@@ -1280,7 +1280,7 @@
         <div class="titlebar-brand">
             <div class="titlebar-logo">&alpha;</div>
             <span class="titlebar-name">ALPHA-Q</span>
-            <span class="titlebar-version">v3.5.1</span>
+            <span class="titlebar-version">v3.5.2</span>
         </div>
         <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
@@ -1371,7 +1371,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="meta">逻辑深度复盘 · v3.5.1 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <p class="meta">逻辑深度复盘 · v3.5.2 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
@@ -2622,7 +2622,7 @@
         }
 
         function renderLossDetector(data) {
-            var tbody = document.getElementById('loss-tbody'); if (!tbody || !data) return; tbody.innerHTML = '';
+            var tbody = document.getElementById('loss-tbody'); if (!tbody || !data || !data.rows) return; tbody.innerHTML = '';
             data.rows.forEach(function (item) {
                 var tr = document.createElement('tr'); var fh = item.feature;
                 if (item.tag) fh = '<span class="tag tag-red">' + item.tag + '</span> ' + item.feature.replace(item.tag + ' ', '');
@@ -2634,21 +2634,21 @@
 
         function renderLogicCheck(data) {
             if (!data) return;
-            var e = document.getElementById('error-recall-text'); if (e) e.innerHTML = data.errorRecall;
+            var e = document.getElementById('error-recall-text'); if (e) e.innerHTML = data.errorRecall || '';
             var tbody = document.getElementById('logic-tbody');
-            if (tbody) { tbody.innerHTML = ''; data.logicRows.forEach(function (item) { var tr = document.createElement('tr'); tr.innerHTML = '<td class="col-dim">' + item.dim + '</td><td>' + item.yesterday + '</td><td>' + item.today + '</td><td><span class="tag tag-' + item.diffType + '">' + item.diff + '</span></td>'; tbody.appendChild(tr); }); }
-            var co = document.getElementById('correction-text'); if (co) co.innerHTML = data.correction;
+            if (tbody && data.logicRows) { tbody.innerHTML = ''; data.logicRows.forEach(function (item) { var tr = document.createElement('tr'); tr.innerHTML = '<td class="col-dim">' + item.dim + '</td><td>' + item.yesterday + '</td><td>' + item.today + '</td><td><span class="tag tag-' + item.diffType + '">' + item.diff + '</span></td>'; tbody.appendChild(tr); }); }
+            var co = document.getElementById('correction-text'); if (co) co.innerHTML = data.correction || '';
         }
 
         function renderTradePlan(data) {
             if (!data) return;
-            var st = document.getElementById('plan-strategy'); if (st) st.innerHTML = data.strategy;
+            var st = document.getElementById('plan-strategy'); if (st) st.innerHTML = data.strategy || '';
             var gt = document.getElementById('plan-guide-tbody');
-            if (gt) { gt.innerHTML = ''; data.guideRows.forEach(function (item) { var tr = document.createElement('tr'); var sc = item.type === 'neg' ? ' class="col-neg"' : (item.type === 'warn' ? ' class="col-warn"' : (item.type === 'pos' ? ' class="col-pos"' : '')); tr.innerHTML = '<td class="col-dim">' + item.dim + '</td><td' + sc + '>' + item.suggest + '</td>'; gt.appendChild(tr); }); }
+            if (gt && data.guideRows) { gt.innerHTML = ''; data.guideRows.forEach(function (item) { var tr = document.createElement('tr'); var sc = item.type === 'neg' ? ' class="col-neg"' : (item.type === 'warn' ? ' class="col-warn"' : (item.type === 'pos' ? ' class="col-pos"' : '')); tr.innerHTML = '<td class="col-dim">' + item.dim + '</td><td' + sc + '>' + item.suggest + '</td>'; gt.appendChild(tr); }); }
             var at = document.getElementById('plan-action-tbody');
-            if (at) { at.innerHTML = ''; data.actionRows.forEach(function (item) { var tr = document.createElement('tr'); var dc = item.dirType === 'pos' ? 'col-pos' : (item.dirType === 'warn' ? 'col-warn' : ''); var th = item.target; if (item.code && item.code !== '--') th = '<span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.target + '</span>'; tr.innerHTML = '<td class="' + dc + '">' + item.direction + '</td><td class="col-dim">' + th + '</td><td>' + item.trigger + '</td>'; at.appendChild(tr); }); }
-            var av = document.getElementById('avoid-list'); if (av) { av.innerHTML = ''; data.avoidList.forEach(function (item) { var li = document.createElement('li'); li.innerHTML = item; av.appendChild(li); }); }
-            var cn = document.getElementById('conclusion-text'); if (cn) cn.innerHTML = data.conclusion;
+            if (at && data.actionRows) { at.innerHTML = ''; data.actionRows.forEach(function (item) { var tr = document.createElement('tr'); var dc = item.dirType === 'pos' ? 'col-pos' : (item.dirType === 'warn' ? 'col-warn' : ''); var th = item.target; if (item.code && item.code !== '--') th = '<span class="stock-code" onclick="openDrawer(\'' + item.code + '\')">' + item.target + '</span>'; tr.innerHTML = '<td class="' + dc + '">' + item.direction + '</td><td class="col-dim">' + th + '</td><td>' + item.trigger + '</td>'; at.appendChild(tr); }); }
+            var av = document.getElementById('avoid-list'); if (av && data.avoidList) { av.innerHTML = ''; data.avoidList.forEach(function (item) { var li = document.createElement('li'); li.innerHTML = item; av.appendChild(li); }); }
+            var cn = document.getElementById('conclusion-text'); if (cn) cn.innerHTML = data.conclusion || '';
         }
 
         function renderAll(rawData) {
@@ -2665,9 +2665,16 @@
                 if (!data.marketOverview.mainlines) data.marketOverview.mainlines = [];
                 if (!data.marketOverview.topTier) data.marketOverview.topTier = [];
                 if (!data.marketOverview.lossDetector) data.marketOverview.lossDetector = { rows: [], alert: '' };
+                if (!data.marketOverview.lossDetector.rows) data.marketOverview.lossDetector.rows = [];
                 if (!data.marketOverview.emotionCycle) data.marketOverview.emotionCycle = '暂无数据';
                 if (!data.logicCheck) data.logicCheck = {};
+                if (!data.logicCheck.logicRows) data.logicCheck.logicRows = [];
                 if (!data.tradePlan) data.tradePlan = {};
+                if (!data.tradePlan.guideRows) data.tradePlan.guideRows = [];
+                if (!data.tradePlan.actionRows) data.tradePlan.actionRows = [];
+                if (!data.tradePlan.avoidList) data.tradePlan.avoidList = [];
+                if (!data.tradePlan.strategy) data.tradePlan.strategy = '';
+                if (!data.tradePlan.conclusion) data.tradePlan.conclusion = '';
 
                 var de = document.getElementById('review-date'); if (de && data.meta) { var od = de.textContent; de.textContent = data.meta.date; if (od !== data.meta.date) flashElement(de); }
                 renderIndices(data.marketOverview.indices);
