@@ -40,7 +40,7 @@
 | `/earnings` | `/earnings [公司名] [财报核心数据]` | 财报预期差分析 |
 | `/report` | `/report` | 生成今日收盘复盘并推送到 Alpha-Q Terminal |
 
-# 收盘复盘输出规范（Alpha-Q Terminal v3.3）
+# 收盘复盘输出规范（Alpha-Q Terminal v3.7 Schema）
 
 当用户发送 `/report` 或「生成今日复盘」时，你必须：
 
@@ -48,78 +48,117 @@
 2. 通过 HTTP POST 推送到 Alpha-Q Terminal API
 3. 告知用户推送结果
 
-## JSON Schema
+## ⛔ 绝对禁止事项
 
-> ⚠️ **必须严格按照以下 Schema 输出，字段名不能自行更改！**
-> Alpha-Q Terminal 会按照这些字段名解析数据，字段名不一致将导致界面空白。
+**JSON 输出必须严格使用以下字段名。不得自创字段名、不得使用 snake_case、不得使用任何替代名称！**
+
+| ❌ 禁止使用 | ✅ 必须使用 |
+|---|---|
+| `mainThemes` | `mainlines`（在 marketOverview 内） |
+| `coreStocks` | `topTier`（在 marketOverview 内） |
+| `riskWarnings` / `risks` | `lossDetector`（在 marketOverview 内） |
+| `nextDayStrategy` / `tomorrowPlan` / `nextDayPlan` | `tradePlan` |
+| `emotionCycle` 以外的情绪字段 | `emotionCycle` |
+| `sentiment_phase` / `sentimentScore` 等扁平字段 | `sentiment` 数组 |
+| `limit_up_count` / `brokenRate` 等扁平字段 | `indices` 数组 |
+| `report_date` / `trade_date` | `date` |
+| 任何 snake_case 字段名 | 统一使用 camelCase |
+
+## JSON Schema（Schema Version: 3.7）
+
+> ⚠️ **这是唯一的正确格式。字段名、结构层级都必须完全一致！**
+> Alpha-Q v3.7 内置了 API 层数据归一化层，会自动转换旧格式。
+> 但为了最佳体验和数据完整性，请严格按照此 Schema 输出。
 
 ```json
 {
   "meta": {
     "date": "YYYY-MM-DD",
-    "version": "3.3",
+    "version": "3.7",
     "mode": "交互式交易终端",
-    "title": "Alpha-Q 3.3"
+    "title": "Alpha-Q 3.7"
   },
   "marketOverview": {
     "indices": [
-      { "label": "上证指数", "value": "涨跌幅%", "type": "pos/neg/neu", "note": "一句话" },
-      { "label": "深证成指", "value": "涨跌幅%", "type": "pos/neg/neu", "note": "一句话" },
-      { "label": "创业板指", "value": "涨跌幅%", "type": "pos/neg/neu", "note": "一句话" },
-      { "label": "成交额", "value": "金额", "type": "neu", "note": "增减" }
+      { "label": "上证指数", "value": "+0.45%", "type": "pos", "note": "缩量反弹" },
+      { "label": "深证成指", "value": "+0.32%", "type": "pos", "note": "" },
+      { "label": "创业板指", "value": "-0.15%", "type": "neg", "note": "" },
+      { "label": "成交额", "value": "1.23", "type": "neu", "note": "万亿 缩量1200亿" }
     ],
     "sentiment": [
-      { "dim": "涨跌比", "data": "X : Y (比值)", "conclusion": "结论" },
-      { "dim": "涨停", "data": "X家 (昨日Y家)", "conclusion": "结论" },
-      { "dim": "跌停", "data": "X家", "conclusion": "结论", "type": "neg(可选)" },
-      { "dim": "连板高度", "data": "X板 (股名 细节)", "conclusion": "结论" },
-      { "dim": "晋级率 2→3", "data": "X% (细节)", "conclusion": "结论" },
-      { "dim": "A股均涨跌幅", "data": "X%", "conclusion": "结论", "type": "neg(可选)" }
+      { "dim": "涨跌比", "data": "3200 : 1800", "conclusion": "多方占优" },
+      { "dim": "涨停", "data": "65家 (昨日48家)", "conclusion": "涨停增多，情绪回升" },
+      { "dim": "跌停", "data": "8家", "conclusion": "可控", "type": "neg" },
+      { "dim": "连板高度", "data": "7板 (股名)", "conclusion": "高度拓展" },
+      { "dim": "炸板率", "data": "18%", "conclusion": "炸板率正常" }
     ],
-    "emotionCycle": "情绪周期判断，用<strong>加粗</strong>关键判断",
+    "emotionCycle": "当前处于<strong>高潮期分歧初期</strong>，涨停数量维持高位但高位股开始分歧",
     "mainlines": [
       {
-        "title": "主线X：板块名",
-        "status": "状态描述",
-        "statusType": "green/red/amber",
-        "indicator": "green/red/amber",
-        "body": "详细分析，可用<span class=\"col-pos\">数字</span>和<span class=\"col-neg\">数字</span>着色，<strong>加粗</strong>重点"
+        "title": "主线：芯片/存储",
+        "status": "强化",
+        "statusType": "green",
+        "indicator": "green",
+        "body": "板块强度断层第一，大单净入28亿。核心标的集体爆发，资金真金白银进场。<br><strong>核心标的：</strong>兴福电子(688545)、同有科技(300302)"
+      },
+      {
+        "title": "次线：通信/CPO",
+        "status": "延续",
+        "statusType": "amber",
+        "indicator": "amber",
+        "body": "字节AI预算利好光模块，但主力净流出23亿，机构在卖游资在接。"
       }
     ],
     "topTier": [
-      { "rank": 1, "tier": 1, "code": "股票代码", "name": "股名", "desc": "板数 · 描述", "chip": "标签" }
+      { "rank": 1, "tier": 3, "code": "600130", "name": "波导股份", "desc": "3板 · 航天+北斗", "chip": "连板龙头" },
+      { "rank": 2, "tier": 2, "code": "688545", "name": "兴福电子", "desc": "首板 · 存储+国企", "chip": "1进2标的" }
     ],
     "lossDetector": {
       "rows": [
-        { "id": 1, "code": "代码或--", "name": "股名", "change": "涨跌幅%", "feature": "特征", "tag": "标签或null" }
+        { "id": 1, "code": "600130", "name": "波导股份", "change": "+10.0%", "feature": "3板炸板14次，换手36%，明天竞价低开-5%以下核按钮", "tag": "炸板" },
+        { "id": 2, "code": "002902", "name": "铭普光磁", "change": "-7.8%", "feature": "换手37%+超大单流出-3.8亿，主力借板块拉高出货", "tag": "核按钮" }
       ],
-      "alert": "风险警示，可用<br>换行，<strong>加粗</strong>重点"
+      "alert": "3板以上接力风险极大，<strong>炸板率高</strong>，高位股谨防核按钮"
     }
   },
   "logicCheck": {
-    "errorRecall": "历史误判检索与修正",
+    "errorRecall": "昨日预判芯片分歧加大，实盘芯片强化超预期",
     "logicRows": [
-      { "dim": "板块/个股", "yesterday": "昨日预期", "today": "今日实盘", "diff": "符合/超/低于预期", "diffType": "green/red/amber" }
+      { "dim": "芯片/存储", "yesterday": "预判分歧加大", "today": "板块强化涨停65只", "diff": "超预期", "diffType": "amber" },
+      { "dim": "商业航天", "yesterday": "预判延续", "today": "高位炸板退潮", "diff": "低于预期", "diffType": "red" }
     ],
-    "correction": "逻辑修正总结"
+    "correction": "芯片板块强度持续超预期，需修正'分歧'判断为'强化'。航天利好出尽是利空。"
   },
   "tradePlan": {
-    "strategy": "策略概述，仓位建议用<span style=\"color:var(--amber-bright)\">数字</span>",
+    "strategy": "偏防守不空仓，<span style=\"color:var(--amber-bright)\">5成</span>仓位。进攻低位回避高位。",
     "guideRows": [
-      { "dim": "维度", "suggest": "建议", "type": "pos/warn/neg(可选)" }
+      { "dim": "进攻方向", "suggest": "首板打板(芯片/存储) + 1进2(换手充分)" },
+      { "dim": "防守策略", "suggest": "高位接力减半仓，尾盘不追高", "type": "warn" },
+      { "dim": "回避方向", "suggest": "商业航天、3板以上接力、量化主导票", "type": "neg" }
     ],
     "actionRows": [
-      { "direction": "方向", "dirType": "pos/warn", "target": "股名 (板数)", "code": "代码或--", "trigger": "触发条件" }
+      { "direction": "首选", "dirType": "pos", "target": "兴福电子 (1进2)", "code": "688545", "trigger": "竞价高开3%以内且量能放大" },
+      { "direction": "次选", "dirType": "pos", "target": "同有科技 (首板)", "code": "300302", "trigger": "分时站稳均线+放量突破" }
     ],
-    "avoidList": ["回避项1", "回避项2"],
-    "conclusion": "总结，<strong>加粗</strong>关键判断"
+    "avoidList": ["商业航天", "3板以上接力", "量化主导票", "病毒防治轮动"],
+    "conclusion": "首选兴福电子1进2，<strong>触发条件：竞价高开3%以内量能放大</strong>。回避高位接力。"
   },
   "deepAnalysis": {
-    "股票代码": {
-      "code": "代码", "name": "股名", "sector": "板块标签",
-      "price": "价格", "change": "涨跌幅%", "board": "板数",
-      "volume": "成交额", "turnover": "换手率%",
-      "logic": "逻辑分析", "risk": "风险提示", "action": "操作建议"
+    "688545": {
+      "code": "688545", "name": "兴福电子", "sector": "芯片/存储 · 首板",
+      "price": "32.45", "change": "+20.0%", "board": "1",
+      "volume": "8.2亿", "turnover": "15.3%",
+      "logic": "存储芯片+电子化学品+国企，板块龙头首板爆发",
+      "risk": "1进2失败风险，注意换手是否充分",
+      "action": "1进2，竞价高开3%以内且量能放大介入"
+    },
+    "600130": {
+      "code": "600130", "name": "波导股份", "sector": "商业航天 · 3板炸板",
+      "price": "18.76", "change": "+10.0%", "board": "3",
+      "volume": "12.3亿", "turnover": "36.1%",
+      "logic": "航天+北斗导航芯片，3板但反复炸板",
+      "risk": "3板炸板14次，换手36%，明天竞价低开-5%以下核按钮",
+      "action": "回避"
     }
   }
 }
@@ -158,10 +197,13 @@ Alpha-Q Terminal 收到数据后会自动刷新界面，无需手动操作。
 - **所有数值必须基于真实数据，禁止编造**
 - **deepAnalysis** 只包含核心标的（3-5只），与 topTier 中的标的保持一致
 - 涨停用红色表示（中国A股惯例），跌停用绿色
-- ⚠️ **字段名严格性**：不要自创字段名！必须使用 `indices`、`sentiment`、`mainlines`、`topTier`、`lossDetector`、`logicCheck`、`tradePlan`，不要用 `mainThemes`、`coreStocks`、`riskAlerts`、`nextDayPlan` 等替代名
-```
+- ⚠️ **字段名严格性**：不要自创字段名！必须使用上方 Schema 中的字段名
+- ⚠️ **禁止 snake_case**：所有字段名必须使用 camelCase，不要用 `limit_up_count`、`sentiment_phase` 等下划线格式
+- ⚠️ **结构层级**：`mainlines`/`topTier`/`lossDetector` 必须在 `marketOverview` 内部，不要放在顶层
+- ⚠️ **禁止替代字段**：不要使用 `mainThemes`、`coreStocks`、`riskWarnings`、`nextDayStrategy` 等字段名
 
-> **兼容说明**：Alpha-Q v3.3 内置了数据适配层，如果你之前使用的旧版 Prompt 产出了 `mainThemes`/`coreStocks`/`riskAlerts`/`nextDayPlan` 等替代字段名，终端仍能自动转换并正确显示。但为了最佳体验，请按上方 Schema 输出标准格式。
+> **兼容说明**：Alpha-Q v3.7 的 API 层内置了自动归一化，即使你输出了非标准格式（如 `mainThemes`/`coreStocks`/snake_case 等），终端也能自动转换并正确显示。但为了数据完整性和最佳体验，请务必按上方 Schema 输出标准格式。
+```
 
 ---
 
@@ -238,6 +280,8 @@ curl -X POST http://127.0.0.1:18901/api/update-data -H "Content-Type: applicatio
 }
 ```
 
+> **v3.7 新增**：API 层内置数据归一化，所有推送数据在写入前会自动转换为 canonical 格式。即使推送的数据使用了 `mainThemes`、`coreStocks`、snake_case 等非标准格式，终端也能正确处理。
+
 ### GET /api/status
 
 查询 API 服务状态。
@@ -251,7 +295,7 @@ curl -X POST http://127.0.0.1:18901/api/update-data -H "Content-Type: applicatio
 {
   "success": true,
   "service": "Alpha-Q Terminal API",
-  "version": "3.3",
+  "version": "3.7",
   "port": 18901,
   "dataPath": "...",
   "historyDir": "...",
@@ -310,6 +354,8 @@ Alpha-Q 自带 MCP Bridge Server，可以在 QwenPaw 中一键配置，让 Agent
 
 ```
 QwenPaw Agent → 调用 push_report 工具 → MCP Bridge (stdio) → HTTP POST → Alpha-Q Terminal API
+                                                                    ↓
+                                                              数据归一化 → 写入 data.json + history
                                                                     ↓
                                                               界面自动刷新 + Toast 通知
 ```

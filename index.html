@@ -2333,12 +2333,13 @@
 
         // ══════════════════
         //  RENDER FUNCTIONS
-        // ══════════════════
         // ═══════════════════════════════════════════
-        //  DATA ADAPTER — Normalize QwenPaw output to render format
-        //  QwenPaw may push data in varying schemas depending on
-        //  the agent prompt version. This adapter detects the format
-        //  and normalizes it so renderAll() always gets what it expects.
+        //  DATA ADAPTER — Lightweight safety net for canonical format
+        //  Since v3.7, the API layer (main.js) normalizes all incoming
+        //  data to canonical schema before writing to data.json.
+        //  This adapter only handles: (1) legacy data files that were
+        //  saved before v3.7, (2) minor defensive checks.
+        //  For new data, this function should be a near-pass-through.
         // ═══════════════════════════════════════════
         function adaptData(raw) {
             if (!raw || !raw.marketOverview) return raw;
@@ -2346,15 +2347,13 @@
             var d = JSON.parse(JSON.stringify(raw)); // deep clone
             var mo = d.marketOverview;
 
-            // ── meta.date: support trade_date / report_date ──
+            // ── Legacy: meta.date from trade_date / report_date (pre-v3.7) ──
             if (d.meta && !d.meta.date) {
                 if (d.meta.trade_date) d.meta.date = d.meta.trade_date;
                 else if (d.meta.report_date) d.meta.date = d.meta.report_date;
             }
 
-            // ── marketOverview field normalization: snake_case → camelCase ──
-            // QwenPaw v3+ uses snake_case, render functions expect camelCase
-            // Must run BEFORE all alias mappings that reference camelCase fields
+            // ── Legacy: snake_case → camelCase (pre-v3.7 data files) ──
             var moAliases = {
                 'limit_up_count': 'limitUpCount',
                 'limit_down_count': 'limitDownCount',
@@ -2374,36 +2373,33 @@
                     mo[moAliases[snakeKey]] = mo[snakeKey];
                 }
             });
-            // Also normalize meta level snake_case
+            // Legacy meta-level snake_case
             if (d.meta) {
-                if (d.meta.sentiment_score !== undefined && d.meta.sentimentScore === undefined) d.meta.sentimentScore = d.meta.sentiment_score;
-                if (d.meta.broken_rate !== undefined && d.meta.brokenRate === undefined) d.meta.brokenRate = d.meta.broken_rate;
+                if (d.meta.sentiment_score !== undefined && mo.sentimentScore === undefined) mo.sentimentScore = d.meta.sentiment_score;
+                if (d.meta.broken_rate !== undefined && mo.brokenRate === undefined) mo.brokenRate = d.meta.broken_rate;
                 if (d.meta.total_limit_up !== undefined && mo.limitUpCount === undefined) mo.limitUpCount = d.meta.total_limit_up;
                 if (d.meta.total_limit_down !== undefined && mo.limitDownCount === undefined) mo.limitDownCount = d.meta.total_limit_down;
                 if (d.meta.total_zhaban !== undefined && mo.brokenCount === undefined) mo.brokenCount = d.meta.total_zhaban;
                 if (d.meta.lianban_height !== undefined && mo.maxConsecutive === undefined) mo.maxConsecutive = d.meta.lianban_height;
             }
 
-            // ── Alias: riskWarnings → riskAlerts ──
+            // ── Legacy: riskWarnings / risks → riskAlerts (pre-v3.7) ──
             if (!d.riskAlerts && d.riskWarnings) {
                 d.riskAlerts = d.riskWarnings.map(function(r) {
                     var target = r.target || '';
-                    // Extract code from "名称(代码)" format
                     var codeMatch = target.match(/\((\d{6})\)/);
                     var code = codeMatch ? codeMatch[1] : '';
                     var name = target.replace(/\(\d{6}\)/, '').trim() || target;
                     return { stock: (code ? code + ' ' : '') + name, risk: (r.type ? r.type + '：' : '') + (r.desc || r.issue || '') };
                 });
             }
-
-            // ── Alias: risks → riskAlerts ──
             if (!d.riskAlerts && d.risks) {
                 d.riskAlerts = d.risks.map(function(r) {
                     return { stock: (r.code || '') + ' ' + (r.name || ''), risk: r.issue || '' };
                 });
             }
 
-            // ── Alias: nextDayStrategy → tomorrowPlan → nextDayPlan ──
+            // ── Legacy: nextDayStrategy → tomorrowPlan → nextDayPlan (pre-v3.7) ──
             if (!d.tomorrowPlan && d.nextDayStrategy) {
                 var nds = d.nextDayStrategy;
                 var targets = [];
@@ -2422,31 +2418,22 @@
                     avoid: avoidStr
                 };
             }
-
-            // ── Alias: tomorrowPlan → nextDayPlan ──
             if (!d.nextDayPlan && d.tomorrowPlan) {
                 var tp = d.tomorrowPlan;
                 var np = { stance: tp.strategy || '' };
                 if (tp.targets && tp.targets.length > 0) {
                     np.primaryTarget = {
-                        name: tp.targets[0].name || '',
-                        code: tp.targets[0].code || '',
-                        action: tp.targets[0].action || '',
-                        trigger: tp.targets[0].trigger || '',
-                        cancel: tp.targets[0].cancel || '',
-                        position: tp.targets[0].position || ''
+                        name: tp.targets[0].name || '', code: tp.targets[0].code || '',
+                        action: tp.targets[0].action || '', trigger: tp.targets[0].trigger || '',
+                        cancel: tp.targets[0].cancel || '', position: tp.targets[0].position || ''
                     };
                     if (tp.targets.length > 1) {
                         np.secondaryTarget = {
-                            name: tp.targets[1].name || '',
-                            code: tp.targets[1].code || '',
-                            action: tp.targets[1].action || '',
-                            trigger: tp.targets[1].trigger || '',
-                            cancel: tp.targets[1].cancel || '',
-                            position: tp.targets[1].position || ''
+                            name: tp.targets[1].name || '', code: tp.targets[1].code || '',
+                            action: tp.targets[1].action || '', trigger: tp.targets[1].trigger || '',
+                            cancel: tp.targets[1].cancel || '', position: tp.targets[1].position || ''
                         };
                     }
-                    // Store extra targets (3rd+) as avoid-style notes
                     if (tp.targets.length > 2) {
                         np.avoid = tp.targets.slice(2).map(function(t) {
                             return t.name + '(' + t.action + '): ' + t.trigger;
@@ -2457,29 +2444,25 @@
                 d.nextDayPlan = np;
             }
 
-            // ── Normalize mainThemes[].coreStocks: string → array ──
+            // ── Legacy: mainThemes[].coreStocks normalization (pre-v3.7) ──
             if (d.mainThemes && d.mainThemes.length > 0) {
                 d.mainThemes.forEach(function(theme) {
                     if (typeof theme.coreStocks === 'string') {
                         theme.coreStocks = theme.coreStocks.split(/[,，、\s]+/).filter(function(s) { return s && s !== '无'; });
                     }
-                    // Also handle strength: numeric → label
                     if (typeof theme.strength === 'number') {
                         if (theme.strength >= 10000) theme.strength = '绝对主线';
                         else if (theme.strength >= 5000) theme.strength = '次主线';
                         else theme.strength = '方向';
                     }
-                    // Handle status/trend field for indicator mapping
                     if (theme.status === '退潮方向' || theme.status === '大出血' || theme.status === '系统性退潮') {
                         theme.trend = '退潮';
                     } else if (theme.status === '分化方向') {
                         theme.trend = '分歧';
                     }
-                    // Also handle new trend values: "强化"/"延续"/"退潮"
                     if (!theme.status && theme.trend) {
                         theme.status = theme.trend;
                     }
-                    // Normalize coreStocks object format: {code, name, board, reason, note} → string
                     if (theme.coreStocks && theme.coreStocks.length > 0) {
                         theme.coreStocks = theme.coreStocks.map(function(s) {
                             if (typeof s === 'string') return s;
@@ -2494,14 +2477,10 @@
                 });
             }
 
-            // ── Normalize coreStocks: support boards/position/status fields ──
+            // ── Legacy: coreStocks board/position normalization (pre-v3.7) ──
             if (d.coreStocks && d.coreStocks.length > 0) {
                 d.coreStocks.forEach(function(s) {
-                    // boards → position
-                    if (!s.position && s.boards !== undefined) {
-                        s.position = s.boards + '板';
-                    }
-                    // status may contain board info
+                    if (!s.position && s.boards !== undefined) s.position = s.boards + '板';
                     if (!s.position && s.status) {
                         var bm = s.status.match(/(\d+)板/);
                         if (bm) s.position = bm[1] + '板';
@@ -2510,17 +2489,12 @@
                 });
             }
 
-            // ── Alias: sentimentCycle → emotionCycle ──
-            if (!mo.emotionCycle && mo.sentimentCycle) {
-                mo.emotionCycle = mo.sentimentCycle;
-            }
-            // Also support marketOverview.summary as emotionCycle fallback
-            if (!mo.emotionCycle && mo.summary) {
-                mo.emotionCycle = mo.summary;
-            }
+            // ── Legacy: sentimentCycle → emotionCycle (pre-v3.7) ──
+            if (!mo.emotionCycle && mo.sentimentCycle) mo.emotionCycle = mo.sentimentCycle;
+            if (!mo.emotionCycle && mo.summary) mo.emotionCycle = mo.summary;
+            if (!mo.emotionCycle && d.meta && d.meta.market_sentiment) mo.emotionCycle = d.meta.market_sentiment;
 
-            // ── marketOverview.indices ──
-            // QwenPaw may not provide indices; synthesize from available data
+            // ── Legacy: synthesize indices from flat fields (pre-v3.7) ──
             if (!mo.indices || mo.indices.length === 0) {
                 mo.indices = [];
                 if (mo.limitUpCount !== undefined) {
@@ -2541,8 +2515,7 @@
                 }
             }
 
-            // ── marketOverview.sentiment ──
-            // QwenPaw may not provide sentiment rows; synthesize from flat fields
+            // ── Legacy: synthesize sentiment from flat fields (pre-v3.7) ──
             if (!mo.sentiment || mo.sentiment.length === 0) {
                 mo.sentiment = [];
                 if (mo.limitUpCount !== undefined) {
@@ -2572,12 +2545,11 @@
                 }
             }
 
-            // ── marketOverview.mainlines ← mainThemes ──
+            // ── Legacy: mainThemes → mainlines (pre-v3.7) ──
             if ((!mo.mainlines || mo.mainlines.length === 0) && d.mainThemes && d.mainThemes.length > 0) {
                 mo.mainlines = d.mainThemes.map(function (t) {
-                    var indicator = 'green'; // default = 确立
+                    var indicator = 'green';
                     var statusType = 'green';
-                    // Check both strength and status fields
                     var strengthStr = String(t.strength || '');
                     var statusStr = String(t.status || t.trend || '');
                     if (strengthStr.indexOf('次主线') >= 0 || strengthStr.indexOf('辅助') >= 0 || statusStr.indexOf('次主线') >= 0) { indicator = 'amber'; statusType = 'amber'; }
@@ -2602,14 +2574,11 @@
                         body: body
                     };
                 });
-                // Don't delete d.mainThemes yet — needed for deepAnalysis synthesis
             }
 
-            // ── marketOverview.topTier ← coreStocks or mainThemes[].coreStocks ──
-            // Also synthesize deepAnalysis from coreStocks BEFORE deleting it
+            // ── Legacy: coreStocks → topTier + deepAnalysis (pre-v3.7) ──
+            if (!d.deepAnalysis) d.deepAnalysis = {};
             if ((!mo.topTier || mo.topTier.length === 0) && d.coreStocks && d.coreStocks.length > 0) {
-                // First, synthesize deepAnalysis from coreStocks
-                if (!d.deepAnalysis) d.deepAnalysis = {};
                 d.coreStocks.forEach(function (s) {
                     if (!s.code) return;
                     var boardMatch = (s.status || '').match(/(\d+)连?板/);
@@ -2628,20 +2597,11 @@
                         }
                     }
                     d.deepAnalysis[s.code] = {
-                        code: s.code,
-                        name: s.name || '--',
-                        sector: sector,
-                        price: '--',
-                        change: '--',
-                        board: boardNum,
-                        volume: '--',
-                        turnover: '--',
-                        logic: s.logic || '暂无逻辑分析',
-                        risk: '暂无风险提示',
-                        action: '暂无操作建议'
+                        code: s.code, name: s.name || '--', sector: sector,
+                        price: '--', change: '--', board: boardNum, volume: '--', turnover: '--',
+                        logic: s.logic || '暂无逻辑分析', risk: '暂无风险提示', action: '暂无操作建议'
                     };
                 });
-                // Also add stocks from mainThemes.coreStocks (format: "名称(代码)")
                 if (d.mainThemes) {
                     d.mainThemes.forEach(function (theme) {
                         var tStocks = theme.coreStocks || [];
@@ -2650,7 +2610,6 @@
                             if (!stockStr) return;
                             var m = stockStr.match(/\((\d{6})\)/);
                             if (!m) {
-                                // Try extracting code from object format
                                 if (typeof stockEntry === 'object' && stockEntry.code) {
                                     var code = stockEntry.code;
                                     var name = stockEntry.name || code;
@@ -2668,42 +2627,27 @@
                             var name = stockStr.replace(/\(\d{6}\)/, '').trim();
                             if (!d.deepAnalysis[code]) {
                                 d.deepAnalysis[code] = {
-                                    code: code,
-                                    name: name,
-                                    sector: theme.name || '--',
-                                    price: '--',
-                                    change: '--',
-                                    board: '--',
-                                    volume: '--',
-                                    turnover: '--',
-                                    logic: theme.description || '暂无逻辑分析',
-                                    risk: '暂无风险提示',
-                                    action: '暂无操作建议'
+                                    code: code, name: name, sector: theme.name || '--',
+                                    price: '--', change: '--', board: '--', volume: '--', turnover: '--',
+                                    logic: theme.description || '暂无逻辑分析', risk: '暂无风险提示', action: '暂无操作建议'
                                 };
                             }
                         });
                     });
                 }
-
                 mo.topTier = d.coreStocks.map(function (s, i) {
                     var tier = 1;
                     if (s.position && s.position.indexOf('2板') >= 0) tier = 2;
                     if (s.position && (s.position.indexOf('3板') >= 0 || s.position.indexOf('高度') >= 0)) tier = 3;
                     return {
-                        rank: i + 1,
-                        tier: tier,
-                        code: s.code || '--',
-                        name: s.name || '--',
-                        desc: (s.status || '') + ' · ' + (s.position || ''),
-                        chip: s.logic || ''
+                        rank: i + 1, tier: tier, code: s.code || '--', name: s.name || '--',
+                        desc: (s.status || '') + ' · ' + (s.position || ''), chip: s.logic || ''
                     };
                 });
-                // Don't delete d.coreStocks yet — cleanup at end
             }
 
-            // ── Fallback: synthesize topTier from mainThemes[].coreStocks ──
+            // ── Legacy: mainThemes[].coreStocks → topTier fallback (pre-v3.7) ──
             if ((!mo.topTier || mo.topTier.length === 0) && d.mainThemes && d.mainThemes.length > 0) {
-                if (!d.deepAnalysis) d.deepAnalysis = {};
                 var tierList = [];
                 var rank = 1;
                 d.mainThemes.forEach(function (theme) {
@@ -2722,8 +2666,6 @@
                             else { name = stockStr; }
                         }
                         if (!name && !code) return;
-
-                        // Determine tier from board info
                         var tier = 1;
                         var position = board;
                         if (board.indexOf('首板→2板') >= 0 || board.indexOf('2板') >= 0) { tier = 2; position = '2板'; }
@@ -2732,33 +2674,23 @@
                         if (board.indexOf('5板') >= 0 || board.indexOf('最高') >= 0) { tier = 5; position = '5板+'; }
                         if (board === '首板') { tier = 1; position = '首板'; }
                         if (board === '--') position = theme.name || '--';
-
-                        // Add to deepAnalysis
                         if (code && !d.deepAnalysis[code]) {
                             d.deepAnalysis[code] = {
                                 code: code, name: name, sector: theme.name || '--',
                                 price: '--', change: '--', board: board, volume: '--', turnover: '--',
-                                logic: reason || theme.description || '暂无逻辑分析',
-                                risk: '暂无风险提示', action: '暂无操作建议'
+                                logic: reason || theme.description || '暂无逻辑分析', risk: '暂无风险提示', action: '暂无操作建议'
                             };
                         }
-
                         tierList.push({
-                            rank: rank++,
-                            tier: tier,
-                            code: code || '--',
-                            name: name || '--',
-                            desc: position + (reason ? ' · ' + reason : ''),
-                            chip: reason || theme.name || ''
+                            rank: rank++, tier: tier, code: code || '--', name: name || '--',
+                            desc: position + (reason ? ' · ' + reason : ''), chip: reason || theme.name || ''
                         });
                     });
                 });
-                if (tierList.length > 0) {
-                    mo.topTier = tierList;
-                }
+                if (tierList.length > 0) mo.topTier = tierList;
             }
 
-            // ── marketOverview.lossDetector ← riskAlerts ──
+            // ── Legacy: riskAlerts → lossDetector (pre-v3.7) ──
             if ((!mo.lossDetector || !mo.lossDetector.rows || mo.lossDetector.rows.length === 0) && d.riskAlerts && d.riskAlerts.length > 0) {
                 mo.lossDetector = {
                     rows: d.riskAlerts.map(function (r, i) {
@@ -2766,105 +2698,74 @@
                         var code = parts.length > 1 ? parts[0] : '--';
                         var name = parts.length > 1 ? parts.slice(1).join(' ') : parts[0];
                         var riskText = r.risk || '';
-                        // Try to extract change from risk text, e.g. "今日-10%跌停", "-9.8%"
                         var changeMatch = riskText.match(/(-?\d+(?:\.\d+)?)%/);
                         var change = changeMatch ? changeMatch[1] + '%' : '--';
-                        // Auto-detect risk type tag
                         var tag = null;
                         if (riskText.indexOf('跌停') >= 0) tag = '跌停';
                         else if (riskText.indexOf('核按钮') >= 0 || riskText.indexOf('核') >= 0) tag = '核按钮';
                         else if (riskText.indexOf('炸板') >= 0) tag = '炸板';
                         else if (riskText.indexOf('开板') >= 0) tag = '开板';
                         return {
-                            id: i + 1,
-                            code: code,
-                            name: name,
-                            change: change,
-                            feature: riskText,
-                            tag: tag
+                            id: i + 1, code: code, name: name, change: change, feature: riskText, tag: tag
                         };
                     }),
                     alert: d.riskAlerts.map(function (r) { return r.risk; }).join('<br>')
                 };
-                // Don't delete d.riskAlerts yet — cleanup at end
             }
 
-            // ── Add risk alert stocks to deepAnalysis (or supplement existing) ──
-            if (!d.deepAnalysis) d.deepAnalysis = {};
+            // ── Legacy: enrich deepAnalysis from lossDetector (pre-v3.7) ──
             if (mo.lossDetector && mo.lossDetector.rows) {
                 mo.lossDetector.rows.forEach(function (row) {
                     if (row.code && row.code !== '--') {
                         if (d.deepAnalysis[row.code]) {
-                            // Supplement existing entry with risk info
                             d.deepAnalysis[row.code].risk = row.feature || d.deepAnalysis[row.code].risk;
                             d.deepAnalysis[row.code].action = '回避';
                             if (row.change !== '--') d.deepAnalysis[row.code].change = row.change;
                         } else {
-                            // Create new entry for risk-only stock
                             d.deepAnalysis[row.code] = {
-                                code: row.code,
-                                name: row.name || '--',
-                                sector: '负反馈标的',
-                                price: '--',
-                                change: row.change !== '--' ? row.change : '--',
-                                board: '--',
-                                volume: '--',
-                                turnover: '--',
-                                logic: row.feature || '暂无逻辑分析',
-                                risk: row.feature || '暂无风险提示',
-                                action: '回避'
+                                code: row.code, name: row.name || '--', sector: '负反馈标的',
+                                price: '--', change: row.change !== '--' ? row.change : '--',
+                                board: '--', volume: '--', turnover: '--',
+                                logic: row.feature || '暂无逻辑分析', risk: row.feature || '暂无风险提示', action: '回避'
                             };
                         }
                     }
                 });
             }
 
-            // ── logicCheck ← synthesize if missing ──
+            // ── Legacy: logicCheck fallback (pre-v3.7) ──
             if (!d.logicCheck) {
                 d.logicCheck = { errorRecall: '暂无历史误判记录', logicRows: [], correction: '' };
             }
 
-            // ── tradePlan ← nextDayPlan ──
+            // ── Legacy: nextDayPlan → tradePlan (pre-v3.7) ──
             if (!d.tradePlan && d.nextDayPlan) {
                 var np = d.nextDayPlan;
                 var guideRows = [];
                 if (np.stance) guideRows.push({ dim: '进攻/防守', suggest: np.stance });
                 if (np.strategy) guideRows.push({ dim: '操作模式', suggest: np.strategy });
                 if (np.avoid) guideRows.push({ dim: '回避方向', suggest: np.avoid, type: 'neg' });
-
                 var actionRows = [];
                 if (np.primaryTarget) {
                     var pt = np.primaryTarget;
                     actionRows.push({
-                        direction: pt.name + '（首选）',
-                        dirType: 'pos',
-                        target: pt.name + ' (' + pt.action + ')',
-                        code: pt.code || '--',
-                        trigger: pt.trigger || ''
+                        direction: pt.name + '（首选）', dirType: 'pos',
+                        target: pt.name + ' (' + pt.action + ')', code: pt.code || '--', trigger: pt.trigger || ''
                     });
                 }
                 if (np.secondaryTarget) {
                     var st = np.secondaryTarget;
                     actionRows.push({
-                        direction: st.name + '（次选）',
-                        dirType: 'pos',
-                        target: st.name + ' (' + st.action + ')',
-                        code: st.code || '--',
-                        trigger: st.trigger || ''
+                        direction: st.name + '（次选）', dirType: 'pos',
+                        target: st.name + ' (' + st.action + ')', code: st.code || '--', trigger: st.trigger || ''
                     });
                 }
-
                 var avoidList = np.avoid ? np.avoid.split('/').map(function (s) { return s.trim(); }) : [];
-
                 d.tradePlan = {
-                    strategy: np.stance || '',
-                    guideRows: guideRows,
-                    actionRows: actionRows,
+                    strategy: np.stance || '', guideRows: guideRows, actionRows: actionRows,
                     avoidList: avoidList,
                     conclusion: np.primaryTarget ? '首选 ' + np.primaryTarget.name + '，触发条件：' + np.primaryTarget.trigger : ''
                 };
-
-                // ── Enrich deepAnalysis with nextDayPlan action info ──
                 if (!d.deepAnalysis) d.deepAnalysis = {};
                 ['primaryTarget', 'secondaryTarget'].forEach(function(key) {
                     var t = np[key];
@@ -2877,30 +2778,19 @@
                         d.deepAnalysis[t.code].action = actionText || d.deepAnalysis[t.code].action;
                     } else {
                         d.deepAnalysis[t.code] = {
-                            code: t.code,
-                            name: t.name || '--',
-                            sector: '明日预案标的',
-                            price: '--',
-                            change: '--',
-                            board: '--',
-                            volume: '--',
-                            turnover: '--',
-                            logic: '暂无逻辑分析',
-                            risk: t.cancel || '暂无风险提示',
-                            action: actionText || '暂无操作建议'
+                            code: t.code, name: t.name || '--', sector: '明日预案标的',
+                            price: '--', change: '--', board: '--', volume: '--', turnover: '--',
+                            logic: '暂无逻辑分析', risk: t.cancel || '暂无风险提示', action: actionText || '暂无操作建议'
                         };
                     }
                 });
-
                 delete d.nextDayPlan;
             }
 
-            // ── Ensure deepAnalysis exists even if no coreStocks ──
-            if (!d.deepAnalysis) {
-                d.deepAnalysis = {};
-            }
+            // ── Ensure deepAnalysis exists ──
+            if (!d.deepAnalysis) d.deepAnalysis = {};
 
-            // ── Cleanup: remove source fields that have been adapted ──
+            // ── Cleanup legacy source fields ──
             delete d.mainThemes;
             delete d.coreStocks;
             delete d.riskAlerts;
