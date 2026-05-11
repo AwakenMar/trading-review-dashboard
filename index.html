@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════
-           INTERACTIVE FINANCIAL TERMINAL THEME v3.6.1
+           INTERACTIVE FINANCIAL TERMINAL THEME v3.7.0
            TRADINGVIEW / BLOOMBERG PROFESSIONAL GRADE
            ═══════════════════════════════════════════ */
         :root {
@@ -1280,7 +1280,7 @@
         <div class="titlebar-brand">
             <div class="titlebar-logo">&alpha;</div>
             <span class="titlebar-name">ALPHA-Q</span>
-            <span class="titlebar-version">v3.6.1</span>
+            <span class="titlebar-version">v3.7.0</span>
         </div>
         <div class="titlebar-center">
             <span><span class="status-dot"></span>LIVE</span>
@@ -1371,7 +1371,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="meta">逻辑深度复盘 · v3.6.1 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
+                    <p class="meta">逻辑深度复盘 · v3.7.0 · <em>逻辑对账 / 地位属性 / 亏钱探测 / 错题召回</em></p>
                 </div>
             </div>
 
@@ -2346,9 +2346,54 @@
             var d = JSON.parse(JSON.stringify(raw)); // deep clone
             var mo = d.marketOverview;
 
-            // ── meta.date: support trade_date ──
-            if (d.meta && !d.meta.date && d.meta.trade_date) {
-                d.meta.date = d.meta.trade_date;
+            // ── meta.date: support trade_date / report_date ──
+            if (d.meta && !d.meta.date) {
+                if (d.meta.trade_date) d.meta.date = d.meta.trade_date;
+                else if (d.meta.report_date) d.meta.date = d.meta.report_date;
+            }
+
+            // ── marketOverview field normalization: snake_case → camelCase ──
+            // QwenPaw v3+ uses snake_case, render functions expect camelCase
+            // Must run BEFORE all alias mappings that reference camelCase fields
+            var moAliases = {
+                'limit_up_count': 'limitUpCount',
+                'limit_down_count': 'limitDownCount',
+                'zhaban_count': 'brokenCount',
+                'zhaban_rate': 'brokenRate',
+                'broken_rate': 'brokenRate',
+                'highest_board': 'maxConsecutive',
+                'max_board_height': 'maxBoardHeight',
+                'sentiment_score': 'sentimentScore',
+                'emotion_score': 'emotionScore',
+                'sentiment_phase': 'sentimentCycle',
+                'total_volume': 'totalVolume',
+                'volume_change': 'volumeChange'
+            };
+            Object.keys(moAliases).forEach(function(snakeKey) {
+                if (mo[snakeKey] !== undefined && mo[moAliases[snakeKey]] === undefined) {
+                    mo[moAliases[snakeKey]] = mo[snakeKey];
+                }
+            });
+            // Also normalize meta level snake_case
+            if (d.meta) {
+                if (d.meta.sentiment_score !== undefined && d.meta.sentimentScore === undefined) d.meta.sentimentScore = d.meta.sentiment_score;
+                if (d.meta.broken_rate !== undefined && d.meta.brokenRate === undefined) d.meta.brokenRate = d.meta.broken_rate;
+                if (d.meta.total_limit_up !== undefined && mo.limitUpCount === undefined) mo.limitUpCount = d.meta.total_limit_up;
+                if (d.meta.total_limit_down !== undefined && mo.limitDownCount === undefined) mo.limitDownCount = d.meta.total_limit_down;
+                if (d.meta.total_zhaban !== undefined && mo.brokenCount === undefined) mo.brokenCount = d.meta.total_zhaban;
+                if (d.meta.lianban_height !== undefined && mo.maxConsecutive === undefined) mo.maxConsecutive = d.meta.lianban_height;
+            }
+
+            // ── Alias: riskWarnings → riskAlerts ──
+            if (!d.riskAlerts && d.riskWarnings) {
+                d.riskAlerts = d.riskWarnings.map(function(r) {
+                    var target = r.target || '';
+                    // Extract code from "名称(代码)" format
+                    var codeMatch = target.match(/\((\d{6})\)/);
+                    var code = codeMatch ? codeMatch[1] : '';
+                    var name = target.replace(/\(\d{6}\)/, '').trim() || target;
+                    return { stock: (code ? code + ' ' : '') + name, risk: (r.type ? r.type + '：' : '') + (r.desc || r.issue || '') };
+                });
             }
 
             // ── Alias: risks → riskAlerts ──
@@ -2356,6 +2401,26 @@
                 d.riskAlerts = d.risks.map(function(r) {
                     return { stock: (r.code || '') + ' ' + (r.name || ''), risk: r.issue || '' };
                 });
+            }
+
+            // ── Alias: nextDayStrategy → tomorrowPlan → nextDayPlan ──
+            if (!d.tomorrowPlan && d.nextDayStrategy) {
+                var nds = d.nextDayStrategy;
+                var targets = [];
+                if (nds.recommended && nds.recommended.length > 0) {
+                    nds.recommended.forEach(function(rec, i) {
+                        targets.push({ name: rec, code: '', action: i === 0 ? '首选' : '备选', trigger: '', cancel: '', position: '' });
+                    });
+                }
+                var avoidStr = '';
+                if (nds.avoid && nds.avoid.length > 0) {
+                    avoidStr = nds.avoid.join(' / ');
+                }
+                d.tomorrowPlan = {
+                    strategy: (nds.stance || '') + (nds.priority ? ' | ' + nds.priority : ''),
+                    targets: targets,
+                    avoid: avoidStr
+                };
             }
 
             // ── Alias: tomorrowPlan → nextDayPlan ──
@@ -2404,11 +2469,27 @@
                         else if (theme.strength >= 5000) theme.strength = '次主线';
                         else theme.strength = '方向';
                     }
-                    // Handle status field for indicator mapping
+                    // Handle status/trend field for indicator mapping
                     if (theme.status === '退潮方向' || theme.status === '大出血' || theme.status === '系统性退潮') {
                         theme.trend = '退潮';
                     } else if (theme.status === '分化方向') {
                         theme.trend = '分歧';
+                    }
+                    // Also handle new trend values: "强化"/"延续"/"退潮"
+                    if (!theme.status && theme.trend) {
+                        theme.status = theme.trend;
+                    }
+                    // Normalize coreStocks object format: {code, name, board, reason, note} → string
+                    if (theme.coreStocks && theme.coreStocks.length > 0) {
+                        theme.coreStocks = theme.coreStocks.map(function(s) {
+                            if (typeof s === 'string') return s;
+                            if (typeof s === 'object' && s !== null) {
+                                var name = s.name || s.code || '';
+                                var code = s.code || '';
+                                return code ? name + '(' + code + ')' : name;
+                            }
+                            return String(s);
+                        });
                     }
                 });
             }
@@ -2433,6 +2514,10 @@
             if (!mo.emotionCycle && mo.sentimentCycle) {
                 mo.emotionCycle = mo.sentimentCycle;
             }
+            // Also support marketOverview.summary as emotionCycle fallback
+            if (!mo.emotionCycle && mo.summary) {
+                mo.emotionCycle = mo.summary;
+            }
 
             // ── marketOverview.indices ──
             // QwenPaw may not provide indices; synthesize from available data
@@ -2444,12 +2529,15 @@
                 if (mo.limitDownCount !== undefined) {
                     mo.indices.push({ label: '跌停', value: String(mo.limitDownCount) + ' 家', type: 'neg', note: '' });
                 }
+                if (mo.brokenCount !== undefined && !mo.limitUpCount) {
+                    mo.indices.push({ label: '炸板', value: String(mo.brokenCount) + ' 家', type: 'neg', note: mo.brokenRate ? '炸板率 ' + mo.brokenRate : '' });
+                }
                 if (mo.emotionScore !== undefined || mo.sentimentScore !== undefined) {
                     var score = mo.sentimentScore !== undefined ? mo.sentimentScore : mo.emotionScore;
                     mo.indices.push({ label: '情绪评分', value: String(score), type: score >= 60 ? 'pos' : 'neg', note: '/100' });
                 }
-                if (mo.totalVolume) {
-                    mo.indices.push({ label: '量能', value: mo.totalVolume, type: 'neu', note: '' });
+                if (mo.totalVolume || mo.volume) {
+                    mo.indices.push({ label: '量能', value: mo.totalVolume || mo.volume, type: 'neu', note: mo.volumeChange ? mo.volumeChange : '' });
                 }
             }
 
@@ -2517,7 +2605,7 @@
                 // Don't delete d.mainThemes yet — needed for deepAnalysis synthesis
             }
 
-            // ── marketOverview.topTier ← coreStocks ──
+            // ── marketOverview.topTier ← coreStocks or mainThemes[].coreStocks ──
             // Also synthesize deepAnalysis from coreStocks BEFORE deleting it
             if ((!mo.topTier || mo.topTier.length === 0) && d.coreStocks && d.coreStocks.length > 0) {
                 // First, synthesize deepAnalysis from coreStocks
@@ -2611,6 +2699,63 @@
                     };
                 });
                 // Don't delete d.coreStocks yet — cleanup at end
+            }
+
+            // ── Fallback: synthesize topTier from mainThemes[].coreStocks ──
+            if ((!mo.topTier || mo.topTier.length === 0) && d.mainThemes && d.mainThemes.length > 0) {
+                if (!d.deepAnalysis) d.deepAnalysis = {};
+                var tierList = [];
+                var rank = 1;
+                d.mainThemes.forEach(function (theme) {
+                    var tStocks = theme.coreStocks || [];
+                    tStocks.forEach(function (stockEntry) {
+                        var stockStr = typeof stockEntry === 'string' ? stockEntry : '';
+                        var code = '', name = '', board = '--', reason = '';
+                        if (typeof stockEntry === 'object' && stockEntry !== null) {
+                            code = stockEntry.code || '';
+                            name = stockEntry.name || '';
+                            board = stockEntry.board || '--';
+                            reason = stockEntry.reason || stockEntry.note || '';
+                        } else if (stockStr) {
+                            var m = stockStr.match(/\((\d{6})\)/);
+                            if (m) { code = m[1]; name = stockStr.replace(/\(\d{6}\)/, '').trim(); }
+                            else { name = stockStr; }
+                        }
+                        if (!name && !code) return;
+
+                        // Determine tier from board info
+                        var tier = 1;
+                        var position = board;
+                        if (board.indexOf('首板→2板') >= 0 || board.indexOf('2板') >= 0) { tier = 2; position = '2板'; }
+                        if (board.indexOf('3板') >= 0) { tier = 3; position = '3板'; }
+                        if (board.indexOf('4板') >= 0) { tier = 4; position = '4板'; }
+                        if (board.indexOf('5板') >= 0 || board.indexOf('最高') >= 0) { tier = 5; position = '5板+'; }
+                        if (board === '首板') { tier = 1; position = '首板'; }
+                        if (board === '--') position = theme.name || '--';
+
+                        // Add to deepAnalysis
+                        if (code && !d.deepAnalysis[code]) {
+                            d.deepAnalysis[code] = {
+                                code: code, name: name, sector: theme.name || '--',
+                                price: '--', change: '--', board: board, volume: '--', turnover: '--',
+                                logic: reason || theme.description || '暂无逻辑分析',
+                                risk: '暂无风险提示', action: '暂无操作建议'
+                            };
+                        }
+
+                        tierList.push({
+                            rank: rank++,
+                            tier: tier,
+                            code: code || '--',
+                            name: name || '--',
+                            desc: position + (reason ? ' · ' + reason : ''),
+                            chip: reason || theme.name || ''
+                        });
+                    });
+                });
+                if (tierList.length > 0) {
+                    mo.topTier = tierList;
+                }
             }
 
             // ── marketOverview.lossDetector ← riskAlerts ──

@@ -1,6 +1,6 @@
 {
   "name": "alpha-q-terminal",
-  "version": "3.6.1",
+  "version": "3.7.0",
   "description": "Alpha-Q 3.4 - 交互式交易复盘终端 (TradingView/Bloomberg Pro UI)",
   "main": "main.js",
   "scripts": {
