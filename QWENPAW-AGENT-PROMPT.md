@@ -56,27 +56,29 @@
 |---|---|
 | `mainThemes` | `mainlines`（在 marketOverview 内） |
 | `coreStocks` | `topTier`（在 marketOverview 内） |
-| `riskWarnings` / `risks` | `lossDetector`（在 marketOverview 内） |
+| `riskWarnings` / `risks` / `riskWarning` | `lossDetector`（在 marketOverview 内） |
 | `nextDayStrategy` / `tomorrowPlan` / `nextDayPlan` | `tradePlan` |
+| `observationPool` | `tradePlan.actionRows` + `deepAnalysis` |
 | `emotionCycle` 以外的情绪字段 | `emotionCycle` |
-| `sentiment_phase` / `sentimentScore` 等扁平字段 | `sentiment` 数组 |
-| `limit_up_count` / `brokenRate` 等扁平字段 | `indices` 数组 |
+| `sentiment` 作为字符串（如"高位分歧"） | `sentiment` 数组 `[{dim, data, conclusion}]` |
+| `sentimentScore` / `sentiment_phase` 等扁平字段 | `sentiment` 数组 |
+| `volume` / `breadth` / `brokenRate` 等扁平字段 | `indices` 数组 |
 | `report_date` / `trade_date` | `date` |
 | 任何 snake_case 字段名 | 统一使用 camelCase |
 
-## JSON Schema（Schema Version: 3.7）
+## JSON Schema（Schema Version: 3.8）
 
 > ⚠️ **这是唯一的正确格式。字段名、结构层级都必须完全一致！**
-> Alpha-Q v3.7 内置了 API 层数据归一化层，会自动转换旧格式。
+> Alpha-Q v3.8 内置了 API 层数据归一化层，会自动转换 v1-v4 各种格式。
 > 但为了最佳体验和数据完整性，请严格按照此 Schema 输出。
 
 ```json
 {
   "meta": {
     "date": "YYYY-MM-DD",
-    "version": "3.7",
+    "version": "3.8",
     "mode": "交互式交易终端",
-    "title": "Alpha-Q 3.7"
+    "title": "Alpha-Q 3.8"
   },
   "marketOverview": {
     "indices": [

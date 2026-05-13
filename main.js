@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   Alpha-Q 3.7 — Electron Main Process
+   Alpha-Q 3.8 — Electron Main Process
    ═══════════════════════════════════════════ */
 
 // ── Guard: Ensure Electron runs in app mode, not Node mode ──
@@ -177,7 +177,7 @@ function registerIpc() {
                     }
                 }
                 // Return empty template if no data.json found
-                return { success: true, data: { meta: { date: new Date().toISOString().split('T')[0], version: '3.3', mode: '交互式交易终端', title: 'Alpha-Q 3.3' }, marketOverview: { indices: [], sentiment: [], emotionCycle: '等待数据推送...', mainlines: [], topTier: [], lossDetector: { rows: [], alert: '' } }, logicCheck: { errorRecall: '', logicRows: [], correction: '' }, tradePlan: { strategy: '等待数据推送...', guideRows: [], actionRows: [], avoidList: [], conclusion: '' }, deepAnalysis: {} } };
+                return { success: true, data: { meta: { date: new Date().toISOString().split('T')[0], version: '3.8', mode: '交互式交易终端', title: 'Alpha-Q 3.8' }, marketOverview: { indices: [], sentiment: [], emotionCycle: '等待数据推送...', mainlines: [], topTier: [], lossDetector: { rows: [], alert: '' } }, logicCheck: { errorRecall: '', logicRows: [], correction: '' }, tradePlan: { strategy: '等待数据推送...', guideRows: [], actionRows: [], avoidList: [], conclusion: '' }, deepAnalysis: {} } };
             }
             var raw = fs.readFileSync(dataPath, 'utf-8');
             return { success: true, data: JSON.parse(raw) };
@@ -356,9 +356,17 @@ function normalizeToCanonical(raw) {
     }
     // Set canonical meta fields
     if (d.meta) {
-        if (!d.meta.version) d.meta.version = '3.7';
+        if (!d.meta.version) d.meta.version = '3.8';
         if (!d.meta.mode) d.meta.mode = '交互式交易终端';
-        if (!d.meta.title) d.meta.title = 'Alpha-Q 3.7';
+        if (!d.meta.title) d.meta.title = 'Alpha-Q 3.8';
+    }
+
+    // ── 1.5. marketOverview.sentiment: string → save & clear ──
+    // v4 format sends sentiment as a descriptive string (e.g. "高位分歧 (High Divergence)")
+    // instead of the canonical array. Save it and clear so synthesis can create the array.
+    if (mo.sentiment && typeof mo.sentiment === 'string') {
+        mo._sentimentStr = mo.sentiment;
+        delete mo.sentiment; // clear so synthesis step 9 runs
     }
 
     // ── 2. marketOverview: snake_case → camelCase ──
@@ -391,8 +399,8 @@ function normalizeToCanonical(raw) {
         if (d.meta.lianban_height !== undefined && mo.maxConsecutive === undefined) mo.maxConsecutive = d.meta.lianban_height;
     }
 
-    // ── 3. riskWarnings / risks → riskAlerts (intermediate) ──
-    if (!d.riskAlerts && d.riskWarnings) {
+    // ── 3. riskWarnings / risks / riskWarning → riskAlerts ──
+    if (!d.riskAlerts && d.riskWarnings && Array.isArray(d.riskWarnings)) {
         d.riskAlerts = d.riskWarnings.map(function(r) {
             var target = r.target || '';
             var codeMatch = target.match(/\((\d{6})\)/);
@@ -405,6 +413,10 @@ function normalizeToCanonical(raw) {
         d.riskAlerts = d.risks.map(function(r) {
             return { stock: (r.code || '') + ' ' + (r.name || ''), risk: r.issue || '' };
         });
+    }
+    // v4: riskWarning is a singular string → wrap into riskAlerts
+    if (!d.riskAlerts && d.riskWarning && typeof d.riskWarning === 'string') {
+        d.riskAlerts = [{ stock: '', risk: d.riskWarning }];
     }
 
     // ── 4. nextDayStrategy → tomorrowPlan → tradePlan ──
@@ -517,26 +529,65 @@ function normalizeToCanonical(raw) {
         if (mo.brokenCount !== undefined && !mo.limitUpCount) {
             mo.indices.push({ label: '炸板', value: String(mo.brokenCount) + ' 家', type: 'neg', note: mo.brokenRate ? '炸板率 ' + mo.brokenRate : '' });
         }
-        if (mo.emotionScore !== undefined || mo.sentimentScore !== undefined) {
-            var score = mo.sentimentScore !== undefined ? mo.sentimentScore : mo.emotionScore;
-            mo.indices.push({ label: '情绪评分', value: String(score), type: score >= 60 ? 'pos' : 'neg', note: '/100' });
+        // v4: sentimentScore is a float (e.g. -0.6), display with context
+        if (mo.sentimentScore !== undefined) {
+            var score = mo.sentimentScore;
+            if (typeof score === 'number' && Math.abs(score) <= 1) {
+                // v4: -1 to 1 scale → display as label
+                mo.indices.push({ label: '情绪倾向', value: score > 0.3 ? '偏多' : (score < -0.3 ? '偏空' : '中性'), type: score >= 0.3 ? 'pos' : (score <= -0.3 ? 'neg' : 'neu'), note: mo._sentimentStr || '' });
+            } else if (typeof score === 'number' && Math.abs(score) > 1) {
+                // v3: 0-100 scale
+                mo.indices.push({ label: '情绪评分', value: String(score), type: score >= 60 ? 'pos' : 'neg', note: '/100' });
+            }
         }
-        if (mo.totalVolume || mo.volume) {
-            mo.indices.push({ label: '量能', value: mo.totalVolume || mo.volume, type: 'neu', note: mo.volumeChange ? mo.volumeChange : '' });
+        if (mo.emotionScore !== undefined) {
+            var es = mo.emotionScore;
+            mo.indices.push({ label: '情绪评分', value: String(es), type: es >= 60 ? 'pos' : 'neg', note: '/100' });
+        }
+        // v4: volume is descriptive string (e.g. "放量分歧")
+        if (mo.volume && typeof mo.volume === 'string') {
+            mo.indices.push({ label: '量能', value: mo.volume, type: 'neu', note: mo.volumeChange ? mo.volumeChange : '' });
+        } else if (mo.totalVolume) {
+            mo.indices.push({ label: '量能', value: mo.totalVolume, type: 'neu', note: mo.volumeChange ? mo.volumeChange : '' });
+        }
+        // v4: breadth is descriptive string (e.g. "跌多涨少")
+        if (mo.breadth && typeof mo.breadth === 'string') {
+            // "跌多涨少" contains both chars — use first occurrence to determine direction
+            var breadthPos = mo.breadth.indexOf('涨');
+            var breadthNeg = mo.breadth.indexOf('跌');
+            var breadthType = 'neu';
+            if (breadthPos >= 0 && breadthNeg < 0) breadthType = 'pos';
+            else if (breadthNeg >= 0 && breadthPos < 0) breadthType = 'neg';
+            else if (breadthPos >= 0 && breadthNeg >= 0) breadthType = breadthNeg < breadthPos ? 'neg' : 'pos';
+            mo.indices.push({ label: '涨跌比', value: mo.breadth, type: breadthType, note: '' });
+        }
+        // v4: brokenRate is descriptive string (e.g. "高炸板率")
+        if (mo.brokenRate && typeof mo.brokenRate === 'string' && !mo.brokenCount) {
+            mo.indices.push({ label: '炸板率', value: mo.brokenRate, type: 'neg', note: '' });
+        } else if (mo.brokenRate && typeof mo.brokenRate === 'number' && !mo.brokenCount) {
+            mo.indices.push({ label: '炸板率', value: mo.brokenRate + '%', type: mo.brokenRate > 30 ? 'neg' : 'neu', note: '' });
         }
     }
 
     // ── 9. Synthesize sentiment from flat fields ──
     if (!mo.sentiment || mo.sentiment.length === 0) {
         mo.sentiment = [];
+        // v4: use saved sentiment string as first sentiment dimension
+        if (mo._sentimentStr) {
+            mo.sentiment.push({ dim: '市场情绪', data: mo._sentimentStr, conclusion: mo._sentimentStr.indexOf('分歧') >= 0 ? '市场分歧，谨慎操作' : (mo._sentimentStr.indexOf('退潮') >= 0 ? '市场退潮，防守为主' : '关注盘面变化') });
+        }
         if (mo.limitUpCount !== undefined) {
             mo.sentiment.push({ dim: '涨停', data: mo.limitUpCount + ' 家', conclusion: mo.limitUpCount >= 80 ? '情绪活跃' : '情绪一般' });
         }
         if (mo.limitDownCount !== undefined) {
             mo.sentiment.push({ dim: '跌停', data: mo.limitDownCount + ' 家', conclusion: mo.limitDownCount > 20 ? '亏钱效应扩散' : '可控', type: mo.limitDownCount > 20 ? 'neg' : undefined });
         }
-        if (mo.brokenCount !== undefined || mo.brokenRate !== undefined) {
-            mo.sentiment.push({ dim: '炸板率', data: (mo.brokenRate !== undefined ? mo.brokenRate + '%' : mo.brokenCount + ' 家'), conclusion: (mo.brokenRate || 0) > 30 ? '炸板率高，接力谨慎' : '炸板率正常' });
+        if (mo.brokenCount !== undefined || (mo.brokenRate && typeof mo.brokenRate === 'number')) {
+            mo.sentiment.push({ dim: '炸板率', data: (typeof mo.brokenRate === 'number' ? mo.brokenRate + '%' : mo.brokenCount + ' 家'), conclusion: (mo.brokenRate || 0) > 30 ? '炸板率高，接力谨慎' : '炸板率正常' });
+        }
+        // v4: brokenRate is descriptive string
+        if (mo.brokenRate && typeof mo.brokenRate === 'string' && !mo.brokenCount) {
+            mo.sentiment.push({ dim: '炸板率', data: mo.brokenRate, conclusion: '接力风险极大', type: 'neg' });
         }
         if (mo.maxConsecutive !== undefined) {
             mo.sentiment.push({ dim: '连板高度', data: mo.maxConsecutive + ' 板', conclusion: mo.maxConsecutive >= 5 ? '高度拓展' : '高度受限' });
@@ -544,11 +595,30 @@ function normalizeToCanonical(raw) {
         if (mo.maxBoardHeight) {
             mo.sentiment.push({ dim: '连板高度', data: mo.maxBoardHeight, conclusion: '最高板' });
         }
-        if (mo.sentimentScore !== undefined) {
-            mo.sentiment.push({ dim: '情绪评分', data: mo.sentimentScore + ' 分', conclusion: mo.sentimentScore >= 60 ? '偏暖' : '偏冷', type: mo.sentimentScore >= 60 ? 'pos' : 'neg' });
+        // v4: sentimentScore on -1 to 1 scale
+        if (mo.sentimentScore !== undefined && typeof mo.sentimentScore === 'number') {
+            if (Math.abs(mo.sentimentScore) <= 1) {
+                var ss = mo.sentimentScore;
+                mo.sentiment.push({ dim: '情绪倾向', data: (ss > 0 ? '+' : '') + ss.toFixed(2), conclusion: ss > 0.3 ? '偏多' : (ss < -0.3 ? '偏空' : '中性'), type: ss >= 0.3 ? 'pos' : (ss <= -0.3 ? 'neg' : undefined) });
+            } else {
+                mo.sentiment.push({ dim: '情绪评分', data: mo.sentimentScore + ' 分', conclusion: mo.sentimentScore >= 60 ? '偏暖' : '偏冷', type: mo.sentimentScore >= 60 ? 'pos' : 'neg' });
+            }
         }
-        if (mo.totalVolume) {
+        // v4: volume as descriptive
+        if (mo.volume && typeof mo.volume === 'string') {
+            mo.sentiment.push({ dim: '量能', data: mo.volume, conclusion: mo.volume.indexOf('放') >= 0 ? '放量' : (mo.volume.indexOf('缩') >= 0 ? '缩量' : '正常') });
+        } else if (mo.totalVolume) {
             mo.sentiment.push({ dim: '量能', data: mo.totalVolume, conclusion: '显著缩量' });
+        }
+        // v4: breadth as descriptive
+        if (mo.breadth && typeof mo.breadth === 'string') {
+            var breadthPos2 = mo.breadth.indexOf('涨');
+            var breadthNeg2 = mo.breadth.indexOf('跌');
+            var bType = 'neu';
+            if (breadthPos2 >= 0 && breadthNeg2 < 0) bType = 'pos';
+            else if (breadthNeg2 >= 0 && breadthPos2 < 0) bType = 'neg';
+            else if (breadthPos2 >= 0 && breadthNeg2 >= 0) bType = breadthNeg2 < breadthPos2 ? 'neg' : 'pos';
+            mo.sentiment.push({ dim: '涨跌分布', data: mo.breadth, conclusion: bType === 'pos' ? '涨多跌少' : '跌多涨少', type: bType });
         }
         if (mo.shanghaiIndex) {
             var shChange = mo.shanghaiIndex.change || '';
@@ -669,9 +739,11 @@ function normalizeToCanonical(raw) {
                     board = stockEntry.board || '--';
                     reason = stockEntry.reason || stockEntry.note || '';
                 } else if (stockStr) {
-                    var m = stockStr.match(/\((\d{6})\)/);
-                    if (m) { code = m[1]; name = stockStr.replace(/\(\d{6}\)/, '').trim(); }
-                    else { name = stockStr; }
+                    // v4 format: "601991 大唐发电 (总龙头)" — code at start
+                    var m = stockStr.match(/^(\d{6})\s+(.+?)(?:\s*\(([^)]*)\))?$/);
+                    if (m) { code = m[1]; name = m[2].trim(); reason = m[3] || ''; }
+                    // v3 format: "大唐发电(601991)" — code in parentheses
+                    else { var m2 = stockStr.match(/\((\d{6})\)/); if (m2) { code = m2[1]; name = stockStr.replace(/\(\d{6}\)/, '').trim(); } else { name = stockStr; } }
                 }
                 if (!name && !code) return;
                 var tier = 1;
@@ -696,6 +768,89 @@ function normalizeToCanonical(raw) {
             });
         });
         if (tierList.length > 0) mo.topTier = tierList;
+    }
+
+    // ── 12.5. observationPool → tradePlan.actionRows + deepAnalysis (v4) ──
+    if (d.observationPool && d.observationPool.length > 0) {
+        if (!d.deepAnalysis) d.deepAnalysis = {};
+        var opActionRows = [];
+        d.observationPool.forEach(function(item) {
+            if (!item.code) return;
+            // Populate deepAnalysis from observationPool
+            if (!d.deepAnalysis[item.code]) {
+                d.deepAnalysis[item.code] = {
+                    code: item.code, name: item.name || '--', sector: item.sector || '观察池标的',
+                    price: '--', change: '--', board: item.board || '--', volume: '--', turnover: '--',
+                    logic: item.logic || '暂无逻辑分析', risk: item.risk || '暂无风险提示', action: item.trigger || '暂无操作建议'
+                };
+            } else {
+                // Enrich existing entry with observationPool data
+                if (item.logic) d.deepAnalysis[item.code].logic = item.logic;
+                if (item.trigger) d.deepAnalysis[item.code].action = item.trigger;
+            }
+            // Populate tradePlan.actionRows from observationPool
+            var dirType = 'pos';
+            if (item.logic && (item.logic.indexOf('退潮') >= 0 || item.logic.indexOf('回避') >= 0)) dirType = 'neg';
+            else if (item.logic && (item.logic.indexOf('跟踪') >= 0 || item.logic.indexOf('观察') >= 0)) dirType = 'warn';
+            opActionRows.push({
+                direction: item.name || item.code, dirType: dirType,
+                target: item.name + '（观察）', code: item.code, trigger: item.trigger || ''
+            });
+        });
+        // Merge into tradePlan if not already populated
+        if (!d.tradePlan || !d.tradePlan.actionRows || d.tradePlan.actionRows.length === 0) {
+            if (!d.tradePlan) d.tradePlan = { strategy: '', guideRows: [], actionRows: [], avoidList: [], conclusion: '' };
+            d.tradePlan.actionRows = opActionRows;
+        } else {
+            // Append non-duplicate observationPool entries
+            var existingCodes = d.tradePlan.actionRows.map(function(a) { return a.code; });
+            opActionRows.forEach(function(row) {
+                if (existingCodes.indexOf(row.code) < 0) d.tradePlan.actionRows.push(row);
+            });
+        }
+        // Also populate topTier from observationPool if empty
+        if (!mo.topTier || mo.topTier.length === 0) {
+            mo.topTier = d.observationPool.map(function(item, i) {
+                return {
+                    rank: i + 1, tier: 1, code: item.code || '--', name: item.name || '--',
+                    desc: (item.board || '观察') + ' · ' + (item.logic || '').substring(0, 30),
+                    chip: item.trigger || ''
+                };
+            });
+        }
+    }
+
+    // ── 12.6. v4: Enrich tradePlan from riskWarning / summary / sentiment ──
+    if (d.tradePlan) {
+        // strategy from riskWarning or summary
+        if (!d.tradePlan.strategy && d.riskWarning && typeof d.riskWarning === 'string') {
+            d.tradePlan.strategy = '防守为主 — ' + d.riskWarning;
+        }
+        if (!d.tradePlan.strategy && mo.summary) {
+            d.tradePlan.strategy = mo.summary.substring(0, 60);
+        }
+        // avoidList from riskWarning
+        if ((!d.tradePlan.avoidList || d.tradePlan.avoidList.length === 0) && d.riskWarning && typeof d.riskWarning === 'string') {
+            d.tradePlan.avoidList = d.riskWarning.split(/[；;，,。.]/).filter(function(s) { return s.trim().length > 2; });
+        }
+        // guideRows from sentiment context
+        if (!d.tradePlan.guideRows || d.tradePlan.guideRows.length === 0) {
+            var guideRows = [];
+            if (d.tradePlan.strategy) guideRows.push({ dim: '进攻/防守', suggest: d.tradePlan.strategy.indexOf('防守') >= 0 ? '防守为主' : '关注盘面' });
+            if (mo.brokenRate) guideRows.push({ dim: '炸板率', suggest: '接力谨慎', type: 'neg' });
+            if (mo._sentimentStr || mo.sentimentCycle) {
+                var sc = mo._sentimentStr || mo.sentimentCycle || '';
+                guideRows.push({ dim: '市场阶段', suggest: sc.indexOf('分歧') >= 0 ? '分歧期，降低仓位' : (sc.indexOf('退潮') >= 0 ? '退潮期，防守为主' : '正常交易') });
+            }
+            if (d.observationPool && d.observationPool.length > 0) {
+                guideRows.push({ dim: '观察标的', suggest: d.observationPool.length + ' 只标的待跟踪', type: 'pos' });
+            }
+            d.tradePlan.guideRows = guideRows;
+        }
+        // conclusion from summary
+        if (!d.tradePlan.conclusion && mo.summary) {
+            d.tradePlan.conclusion = mo.summary;
+        }
     }
 
     // ── 13. riskAlerts → lossDetector ──
@@ -812,9 +967,14 @@ function normalizeToCanonical(raw) {
     delete d.riskAlerts;
     delete d.riskWarnings;
     delete d.risks;
+    delete d.riskWarning;  // v4 singular string
     delete d.nextDayStrategy;
     delete d.tomorrowPlan;
     delete d.nextDayPlan;
+    delete d.observationPool;  // v4 field → converted to tradePlan + deepAnalysis
+
+    // Clean up internal temp fields
+    delete mo._sentimentStr;
 
     // Clean up snake_case fields from marketOverview (keep only camelCase canonical)
     Object.keys(moAliases).forEach(function(snakeKey) {
@@ -863,7 +1023,7 @@ function startApiServer() {
             var statusInfo = {
                 success: true,
                 service: 'Alpha-Q Terminal API',
-                version: '3.7',
+                version: '3.8',
                 port: API_PORT,
                 dataPath: getDataPath(),
                 historyDir: getHistoryDir(),
