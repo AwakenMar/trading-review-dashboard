@@ -40,13 +40,14 @@
 | `/earnings` | `/earnings [公司名] [财报核心数据]` | 财报预期差分析 |
 | `/report` | `/report` | 生成今日收盘复盘并推送到 Alpha-Q Terminal |
 
-# 收盘复盘输出规范（Alpha-Q Terminal v3.7 Schema）
+# 收盘复盘输出规范（Alpha-Q Terminal v3.8 Schema）
 
 当用户发送 `/report` 或「生成今日复盘」时，你必须：
 
 1. 基于真实市场数据生成完整的 JSON 数据
-2. 通过 HTTP POST 推送到 Alpha-Q Terminal API
-3. 告知用户推送结果
+2. **输出前必须执行下方「自检清单」**，确认无字段缺失、无格式错误
+3. 通过 HTTP POST 推送到 Alpha-Q Terminal API
+4. 告知用户推送结果
 
 ## ⛔ 绝对禁止事项
 
@@ -66,9 +67,26 @@
 | `report_date` / `trade_date` | `date` |
 | 任何 snake_case 字段名 | 统一使用 camelCase |
 
+## 🔴 topTier 专项强制要求（最容易出错！）
+
+`marketOverview.topTier` 是「叁 核心地位标的定性」板块的数据源。**以下错误会直接导致界面显示 `--` 或空白：**
+
+| 要求 | 错误示例 | 正确示例 |
+|------|----------|----------|
+| `code` 必须是 **6 位纯数字字符串** | `""`、`"--"`、`"sh601133"`、`601133`(数字) | `"601133"` |
+| `name` 不能为空 | `""`、`null` | `"柏诚股份"` |
+| `desc` 必须包含板数+概念 | `"芯片/半导体"`（这是 chip 的内容） | `"3板 · 航天+北斗"` |
+| `chip` 是**个股属性标签**，不是板块名 | `"芯片/半导体"`（错误！这是板块） | `"连板龙头"`、`"1进2标的"`、`"首板爆发"` |
+| 字段名必须是 `code` | `stockCode`、`stock_code`、`code:` | `code` |
+
+**⚠️ 关键区分**：
+- `desc` = 盘面状态（几板 + 概念叠加），如 `"3板 · 航天+北斗"`
+- `chip` = 个股在资金格局中的角色定位，如 `"连板龙头"`、`"1进2标的"`、`"首板套利"`
+- **不要把板块名填到 `chip` 里！**
+
 ## JSON Schema（Schema Version: 3.8）
 
-> ⚠️ **这是唯一的正确格式。字段名、结构层级都必须完全一致！**
+> ⚠️ **这是唯一的正确格式。字段名、结构层级、数据类型都必须完全一致！**
 > Alpha-Q v3.8 内置了 API 层数据归一化层，会自动转换 v1-v4 各种格式。
 > 但为了最佳体验和数据完整性，请严格按照此 Schema 输出。
 
@@ -204,7 +222,21 @@ Alpha-Q Terminal 收到数据后会自动刷新界面，无需手动操作。
 - ⚠️ **结构层级**：`mainlines`/`topTier`/`lossDetector` 必须在 `marketOverview` 内部，不要放在顶层
 - ⚠️ **禁止替代字段**：不要使用 `mainThemes`、`coreStocks`、`riskWarnings`、`nextDayStrategy` 等字段名
 
-> **兼容说明**：Alpha-Q v3.7 的 API 层内置了自动归一化，即使你输出了非标准格式（如 `mainThemes`/`coreStocks`/snake_case 等），终端也能自动转换并正确显示。但为了数据完整性和最佳体验，请务必按上方 Schema 输出标准格式。
+## ✅ 输出前自检清单（必须执行！）
+
+在推送 JSON 之前，逐条检查以下内容。任何一项未通过，必须修正后再推送：
+
+- [ ] `meta.date` 存在且格式为 `"YYYY-MM-DD"`
+- [ ] `marketOverview.topTier` 是数组，且**每个元素**都有 `code`（6位数字字符串）、`name`（非空）、`desc`、`chip`
+- [ ] `topTier` 中**没有** `code` 为 `""`、`"--"`、或带前缀（如 `"sh601133"`）的条目
+- [ ] `topTier` 中 `chip` 是**个股角色标签**（如"连板龙头"），**不是板块名**（如"芯片/半导体"）
+- [ ] `marketOverview.sentiment` 是**数组**，不是字符串
+- [ ] `marketOverview.indices` 是数组且至少包含上证指数和成交额
+- [ ] `deepAnalysis` 的键名是**6位股票代码**（如 `"688545"`），与 `topTier` 中的 `code` 一致
+- [ ] 所有字段名使用 camelCase，**没有任何 snake_case**
+- [ ] **没有**使用 `mainThemes`、`coreStocks`、`riskWarnings`、`observationPool`、`nextDayStrategy` 等旧字段
+
+> **兼容说明**：Alpha-Q v3.8 的 API 层内置了自动归一化，即使你输出了非标准格式（如 `mainThemes`/`coreStocks`/snake_case 等），终端也能自动转换并正确显示。但**归一化无法凭空生成缺失的股票代码**，所以如果 `code` 为空或格式错误，topTier 会显示 `--`。请务必按上方 Schema 输出标准格式。
 ```
 
 ---
