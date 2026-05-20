@@ -2930,6 +2930,41 @@
             delete d.observationPool;
             delete mo._sentimentStr;
 
+            // ── Backfill deepAnalysis from topTier ──
+            // If QwenPaw outputs canonical topTier directly (without coreStocks/observationPool),
+            // deepAnalysis entries for those stocks won't exist. This ensures every topTier
+            // stock with a valid 6-digit code has a deepAnalysis entry.
+            if (mo.topTier && mo.topTier.length > 0) {
+                mo.topTier.forEach(function(item) {
+                    if (!item.code || item.code === '--' || !/^\d{6}$/.test(item.code)) return;
+                    if (!d.deepAnalysis[item.code]) {
+                        var sector = item.desc || '--';
+                        var logic = item.chip || '暂无逻辑分析';
+                        for (var mi = 0; mi < mo.mainlines.length; mi++) {
+                            var ml = mo.mainlines[mi];
+                            if (ml.body && (ml.body.indexOf(item.code) >= 0 || ml.body.indexOf(item.name) >= 0)) {
+                                sector = ml.title.replace(/^(主线|次线|弱|强|退潮)[：:]\s*/, '') + ' · ' + (item.chip || '');
+                                logic = ml.body.replace(/<[^>]*>/g, '').substring(0, 80);
+                                break;
+                            }
+                        }
+                        d.deepAnalysis[item.code] = {
+                            code: item.code, name: item.name || '--', sector: sector,
+                            price: '--', change: '--', board: '--', volume: '--', turnover: '--',
+                            logic: logic, risk: '暂无风险提示', action: '暂无操作建议'
+                        };
+                    } else {
+                        var existing = d.deepAnalysis[item.code];
+                        if (existing.sector === '--' || !existing.sector) {
+                            existing.sector = item.desc || '--';
+                        }
+                        if (existing.logic === '暂无逻辑分析' && item.chip) {
+                            existing.logic = item.chip;
+                        }
+                    }
+                });
+            }
+
             return d;
         }
 

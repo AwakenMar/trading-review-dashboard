@@ -1,7 +1,7 @@
 {
   "name": "alpha-q-terminal",
-  "version": "3.8.0",
-  "description": "Alpha-Q 3.8 - 交互式交易复盘终端 (v4格式归一化 + 观察池/风险预警映射)",
+  "version": "3.8.1",
+  "description": "Alpha-Q 3.8.1 - 交互式交易复盘终端 (topTier深度数据回填 + v4格式归一化)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   Alpha-Q 3.8 — Electron Main Process
+   Alpha-Q 3.8.1 — Electron Main Process
    ═══════════════════════════════════════════ */
 
 // ── Guard: Ensure Electron runs in app mode, not Node mode ──
@@ -177,7 +177,7 @@ function registerIpc() {
                     }
                 }
                 // Return empty template if no data.json found
-                return { success: true, data: { meta: { date: new Date().toISOString().split('T')[0], version: '3.8', mode: '交互式交易终端', title: 'Alpha-Q 3.8' }, marketOverview: { indices: [], sentiment: [], emotionCycle: '等待数据推送...', mainlines: [], topTier: [], lossDetector: { rows: [], alert: '' } }, logicCheck: { errorRecall: '', logicRows: [], correction: '' }, tradePlan: { strategy: '等待数据推送...', guideRows: [], actionRows: [], avoidList: [], conclusion: '' }, deepAnalysis: {} } };
+                return { success: true, data: { meta: { date: new Date().toISOString().split('T')[0], version: '3.8.1', mode: '交互式交易终端', title: 'Alpha-Q 3.8.1' }, marketOverview: { indices: [], sentiment: [], emotionCycle: '等待数据推送...', mainlines: [], topTier: [], lossDetector: { rows: [], alert: '' } }, logicCheck: { errorRecall: '', logicRows: [], correction: '' }, tradePlan: { strategy: '等待数据推送...', guideRows: [], actionRows: [], avoidList: [], conclusion: '' }, deepAnalysis: {} } };
             }
             var raw = fs.readFileSync(dataPath, 'utf-8');
             return { success: true, data: JSON.parse(raw) };
@@ -356,9 +356,9 @@ function normalizeToCanonical(raw) {
     }
     // Set canonical meta fields
     if (d.meta) {
-        if (!d.meta.version) d.meta.version = '3.8';
+        if (!d.meta.version) d.meta.version = '3.8.1';
         if (!d.meta.mode) d.meta.mode = '交互式交易终端';
-        if (!d.meta.title) d.meta.title = 'Alpha-Q 3.8';
+        if (!d.meta.title) d.meta.title = 'Alpha-Q 3.8.1';
     }
 
     // ── 1.5. marketOverview.sentiment: string → save & clear ──
@@ -961,6 +961,43 @@ function normalizeToCanonical(raw) {
     if (!d.tradePlan.actionRows) d.tradePlan.actionRows = [];
     if (!d.tradePlan.avoidList) d.tradePlan.avoidList = [];
 
+    // ── 17.5. Backfill deepAnalysis from topTier ──
+    // If QwenPaw outputs canonical topTier directly (without coreStocks/observationPool),
+    // deepAnalysis entries for those stocks won't exist. This step ensures every topTier
+    // stock with a valid 6-digit code has a deepAnalysis entry.
+    if (mo.topTier && mo.topTier.length > 0) {
+        mo.topTier.forEach(function(item) {
+            if (!item.code || item.code === '--' || !/^\d{6}$/.test(item.code)) return;
+            if (!d.deepAnalysis[item.code]) {
+                // Try to find matching mainline for sector/logic context
+                var sector = item.desc || '--';
+                var logic = item.chip || '暂无逻辑分析';
+                for (var mi = 0; mi < mo.mainlines.length; mi++) {
+                    var ml = mo.mainlines[mi];
+                    if (ml.body && (ml.body.indexOf(item.code) >= 0 || ml.body.indexOf(item.name) >= 0)) {
+                        sector = ml.title.replace(/^(主线|次线|弱|强|退潮)[：:]\s*/, '') + ' · ' + (item.chip || '');
+                        logic = ml.body.replace(/<[^>]*>/g, '').substring(0, 80);
+                        break;
+                    }
+                }
+                d.deepAnalysis[item.code] = {
+                    code: item.code, name: item.name || '--', sector: sector,
+                    price: '--', change: '--', board: '--', volume: '--', turnover: '--',
+                    logic: logic, risk: '暂无风险提示', action: '暂无操作建议'
+                };
+            } else {
+                // Enrich existing entry with topTier context if missing
+                var existing = d.deepAnalysis[item.code];
+                if (existing.sector === '--' || !existing.sector) {
+                    existing.sector = item.desc || '--';
+                }
+                if (existing.logic === '暂无逻辑分析' && item.chip) {
+                    existing.logic = item.chip;
+                }
+            }
+        });
+    }
+
     // ── 18. Cleanup: remove source fields that have been converted ──
     delete d.mainThemes;
     delete d.coreStocks;
@@ -1023,7 +1060,7 @@ function startApiServer() {
             var statusInfo = {
                 success: true,
                 service: 'Alpha-Q Terminal API',
-                version: '3.8',
+                version: '3.8.1',
                 port: API_PORT,
                 dataPath: getDataPath(),
                 historyDir: getHistoryDir(),
